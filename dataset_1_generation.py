@@ -20,6 +20,8 @@ for line in in_d:
 all_possible_char = ['G', 'E', 'A']
 max_size = 2
 
+new_molecules = []
+
 for molecule in molecules:
     all_char = list(molecule)
 
@@ -31,40 +33,43 @@ for molecule in molecules:
         if not item in all_possible_char:
             all_possible_char.append(item)
 
-# Padding
-padded_molecules = []
-for molecule in molecules:
-    molecule = 'G' + molecule
-    molecule = molecule + 'E'
-    if len(molecule) < max_size:
-        padding = int(max_size - len(molecule))
-        for i in range(padding):
-            molecule += 'A'
-    padded_molecules.append(molecule)
+    molecule = 'G' + molecule + 'E'
+    new_molecules.append(molecule)
 
 idx_to_char = {idx:char for idx, char in enumerate(all_possible_char)}
 char_to_idx = {char:idx for idx, char in enumerate(all_possible_char)}
 
-n_feat = len(all_possible_char)
-n_samples = int(len(molecules))
+window_length = 10
 
-X = np.zeros((n_samples, max_size, n_feat))
-y = np.zeros((n_samples, max_size, n_feat))
+X = []
+y = []
+
+for new_mol in new_molecules:
+    for i in range(len(new_mol)-window_length):
+        X.append(new_mol[i:i+window_length])
+        y.append(new_mol[i+window_length])
+
+# One hot encoding
+n_samples = len(X)
+n_features = len(all_possible_char)
+
+X_hot = np.zeros((n_samples, window_length, n_features))
+y_hot = np.zeros((n_samples, n_features))
 
 for n in range(n_samples):
-    sample = padded_molecules[n]
-    sample_idx = [char_to_idx[char] for char in sample]
-    input_sequence = np.zeros((max_size, n_feat))
-    for j in range(max_size):
-        input_sequence[j][sample_idx[j]] = 1.0
-    X[n]=input_sequence
+    sample_x = X[n]
+    sample_x_idx = [char_to_idx[char] for char in sample_x]
+    input_sequence = np.zeros((window_length, n_features))
+    for j in range(window_length):
+        input_sequence[j][sample_x_idx[j]] = 1.0
+    X_hot[n]=input_sequence
 
-    output_sequence = np.zeros((max_size, n_feat))
-    for j in range(max_size-1):
-        output_sequence[j][sample_idx[j+1]] = 1.0
-    y[n] = output_sequence
+    output_sequence = np.zeros((n_features,))
+    sample_y = y[n]
+    sample_y_idx = char_to_idx[sample_y]
+    output_sequence[sample_y_idx] = 1.0
+    y_hot[n] = output_sequence
 
-# np.savez("dataset_1.npz", X, y, idx_to_char, char_to_idx)
-data = {"X":X, "y":y, "idx_to_char":idx_to_char, "char_to_idx":char_to_idx}
+
+data = {"X":X_hot, "y":y_hot, "idx_to_char":idx_to_char, "char_to_idx":char_to_idx}
 joblib.dump(data, "dataset_1.bz")
-

@@ -7,7 +7,7 @@ from keras.layers import Dense
 from keras.layers import Activation
 
 
-data = joblib.load("dataset_1.bz")
+data = joblib.load("dataset_2.bz")
 X = data["X"]
 y = data["y"]
 
@@ -32,7 +32,7 @@ model.add(TimeDistributed(Dense(n_feat), input_shape=(None, hidden_neurons_2)))
 model.add(Activation('softmax'))
 model.compile(loss="categorical_crossentropy", optimizer="rmsprop")
 
-model.fit(X, y, batch_size=10, verbose=1, nb_epoch=1)
+model.fit(X, y, batch_size=10, verbose=1, nb_epoch=3)
 
 X_pred = np.zeros((1, max_size, n_feat))
 y_char = ['G']
