@@ -2,10 +2,15 @@ import numpy as np
 import joblib
 from keras import Sequential
 from keras.layers import LSTM
-from keras.layers import TimeDistributed
 from keras.layers import Dense
 from keras.layers import Activation
+from keras.callbacks import TensorBoard
+from keras.layers import Lambda
+from keras.models import load_model
 
+tensorboard = TensorBoard(log_dir='./tb/model_1',
+    write_graph=True, write_images=False)
+callbacks_list = [tensorboard]
 
 data = joblib.load("dataset_1.bz")
 X = data["X"]
@@ -28,10 +33,13 @@ model.add(LSTM(units=hidden_neurons_1, input_shape=(None, n_feat), return_sequen
 model.add(LSTM(units=hidden_neurons_2, input_shape=(None, hidden_neurons_1), return_sequences=False, dropout=0.5))
 # This will output (n_feat,)
 model.add(Dense(n_feat))
+# Modifying the softmax with the `Temperature' parameter
+model.add(Lambda(lambda x: x / 1))
 model.add(Activation('softmax'))
 model.compile(loss="categorical_crossentropy", optimizer="rmsprop")
 
-model.fit(X, y, batch_size=500, verbose=1, nb_epoch=3)
+model.fit(X, y, batch_size=500, verbose=1, nb_epoch=4, callbacks=callbacks_list)
+model.save("./saved_models/model_1/model_1.h5")
 
 # Predicting smiles
 X_pred = X[0]
@@ -45,8 +53,10 @@ X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))
 
 X_pred_temp = X_pred
 
+new_model = load_model("./saved_models/model_1/model_1.h5")
+
 while( y_pred[-1] != 'E'):
-    out = model.predict(X_pred_temp)
+    out = new_model.predict(X_pred_temp)
     out_idx = np.argmax(out[0])
     y_pred += idx_to_char[out_idx]
     X_pred_temp[:, :-1, :] = X_pred[:, 1:, :]
