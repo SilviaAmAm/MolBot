@@ -44,22 +44,23 @@ model.compile(loss="categorical_crossentropy", optimizer="rmsprop")
 model.fit(X, y, batch_size=10, verbose=1, nb_epoch=3, callbacks=callbacks_list)
 model.save("./saved_models/model_2/model_2.h5")
 
-X_pred = np.zeros((1, max_size, n_feat))
-y_char = ['G']
-X_pred[0, 0, char_to_idx['G']] = 1
-
-slice = X_pred[:, :1, :]
-print(slice.shape)
-
 new_model = load_model("./saved_models/model_2/model_2.h5")
 
-for i in range(max_size-1):
-    out = new_model.predict(X_pred[:, :i+1, :])[0][-1]
-    idx_out = np.argmax(out)
-    X_pred[0, i+1, idx_out] = 1
-    if idx_to_char[idx_out] == 'E':
-        break
-    else:
-        y_char.append(idx_to_char[idx_out])
+f = open("./pred_smiles/pred_smiles_2.py", 'w')
 
-print(y_char)
+for _ in range(4):
+    X_pred = np.zeros((1, max_size, n_feat))
+    y_char = ['G']
+    X_pred[0, 0, char_to_idx['G']] = 1
+
+    for i in range(max_size-1):
+        out = new_model.predict(X_pred[:, :i+1, :])[0][-1]
+        idx_out = np.argmax(out)
+        X_pred[0, i+1, idx_out] = 1
+        if idx_to_char[idx_out] == 'E':
+            break
+        else:
+            y_char.append(idx_to_char[idx_out])
+
+    f.write(y_char)
+    f.write("\n")

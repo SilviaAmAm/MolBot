@@ -41,34 +41,36 @@ model.compile(loss="categorical_crossentropy", optimizer="rmsprop")
 model.fit(X, y, batch_size=500, verbose=1, nb_epoch=4, callbacks=callbacks_list)
 model.save("./saved_models/model_1/model_1.h5")
 
-# Predicting smiles
-X_pred = X[0]
-y_pred = ''
-
-for i in range(X_pred.shape[0]):
-    idx = np.argmax(X_pred[i])
-    y_pred += idx_to_char[idx]
-
-X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))
-
-X_pred_temp = X_pred
-
 new_model = load_model("./saved_models/model_1/model_1.h5")
+f = open("./pred_smiles/pred_smiles_1.py", 'w')
 
-while( y_pred[-1] != 'E'):
-    out = new_model.predict(X_pred_temp)
-    out_idx = np.argmax(out[0])
-    y_pred += idx_to_char[out_idx]
-    X_pred_temp[:, :-1, :] = X_pred[:, 1:, :]
-    y_pred_hot = np.zeros((1, X_pred.shape[-1]))
-    y_pred_hot[:, out_idx] = 1
-    X_pred_temp[:, -1, :] = y_pred_hot
+for i in range(4):
+    # Predicting smiles
+    X_pred = X[i]
+    y_pred = ''
 
-    if len(y_pred) == 100:
-        print("Disaster!\n")
-        break
+    for i in range(X_pred.shape[0]):
+        idx = np.argmax(X_pred[i])
+        y_pred += idx_to_char[idx]
 
-print(y_pred)
+    X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))
+    X_pred_temp = X_pred
+
+    while( y_pred[-1] != 'E'):
+        out = new_model.predict(X_pred_temp)
+        out_idx = np.argmax(out[0])
+        y_pred += idx_to_char[out_idx]
+        X_pred_temp[:, :-1, :] = X_pred[:, 1:, :]
+        y_pred_hot = np.zeros((1, X_pred.shape[-1]))
+        y_pred_hot[:, out_idx] = 1
+        X_pred_temp[:, -1, :] = y_pred_hot
+
+        if len(y_pred) == 100:
+            print("Disaster!\n")
+            break
+
+    f.write(y_pred)
+    f.write("\n")
 
 
 
