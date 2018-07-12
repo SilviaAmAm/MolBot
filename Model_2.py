@@ -46,7 +46,7 @@ model.save("./saved_models/model_2/model_2.h5")
 
 new_model = load_model("./saved_models/model_2/model_2.h5")
 
-f = open("./pred_smiles/pred_smiles_2.py", 'w')
+f = open("./pred_smiles/pred_smiles_2.txt", 'w')
 
 for _ in range(4):
     X_pred = np.zeros((1, max_size, n_feat))

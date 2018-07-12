@@ -42,16 +42,26 @@ model.fit(X, y, batch_size=500, verbose=1, nb_epoch=4, callbacks=callbacks_list)
 model.save("./saved_models/model_1/model_1.h5")
 
 new_model = load_model("./saved_models/model_1/model_1.h5")
-f = open("./pred_smiles/pred_smiles_1.py", 'w')
+f = open("./pred_smiles/pred_smiles_1.txt", 'w')
+
+data_2 = joblib.load("dataset_2.bz")
+X_2 = data_2["X"]
+
 
 for i in range(4):
     # Predicting smiles
-    X_pred = X[i]
+    X_original = X_2[i]
+    y_orig = ''
+    X_pred = X_2[i, :10, :]
     y_pred = ''
 
     for i in range(X_pred.shape[0]):
         idx = np.argmax(X_pred[i])
         y_pred += idx_to_char[idx]
+
+    for i in range(X_original.shape[0]):
+        idx = np.argmax(X_original[i])
+        y_orig += idx_to_char[idx]
 
     X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))
     X_pred_temp = X_pred
@@ -69,7 +79,7 @@ for i in range(4):
             print("Disaster!\n")
             break
 
-    f.write(y_pred)
+    f.write(y_orig + "\t" + y_pred)
     f.write("\n")
 
 
