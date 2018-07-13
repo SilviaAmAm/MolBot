@@ -9,7 +9,7 @@ molecules = []
 for line in in_d:
     line_split = line.split(",")
     molecule_raw = line_split[-3]
-    molecule = molecule_raw.strip('"')
+    molecule = molecule_raw[1:-1]
     if molecule == "CANONICAL_SMILES":
         pass
     else:
