@@ -131,13 +131,14 @@ class Model_1(BaseEstimator):
 
             self.idx_to_char = {idx: char for idx, char in enumerate(all_possible_char)}
             self.char_to_idx = {char: idx for idx, char in enumerate(all_possible_char)}
+            n_possible_char = len(self.idx_to_char)
         else:
             new_molecules = []
             for molecule in X:
                 molecule = 'G' + molecule + 'E'
                 new_molecules.append(molecule)
 
-            all_possible_char = len(self.idx_to_char)
+            n_possible_char = len(self.idx_to_char)
 
 
         # Splitting X into window lengths and y into the characters after each window
@@ -151,7 +152,7 @@ class Model_1(BaseEstimator):
 
         # One hot encoding
         n_samples = len(window_X)
-        n_features = len(all_possible_char)
+        n_features = n_possible_char
 
         X_hot = np.zeros((n_samples, self.window_length, n_features))
         y_hot = np.zeros((n_samples, n_features))
@@ -196,7 +197,7 @@ class Model_1(BaseEstimator):
         all_predictions = []
 
         for i in range(0, n_samples):
-            X_hot = self._hot_encode(X[i])
+            X_hot, _ = self._hot_encode([X[i]])
             X_pred = X_hot[i, :, :]  # shape (window_size, n_feat)
             X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))  # shape (1, window_size, n_feat)
 
