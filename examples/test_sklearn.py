@@ -1,6 +1,8 @@
+import sys
+sys.path.append('/Volumes/Transcend/repositories/NovaData/models/')
 import sklearn_models
 
-in_d = open("bioactivity_PPARg_filtered.csv", 'r')
+in_d = open("/Volumes/Transcend/repositories/NovaData/data/bioactivity_PPARg_filtered.csv", 'r')
 
 molecules = []
 
@@ -19,7 +21,7 @@ estimator.fit(molecules[:4])
 
 predictions = estimator.predict(molecules[:4])
 
-f = open("./pred_smiles/pred_smiles_1.txt", 'w')
+f = open("/Volumes/Transcend/repositories/NovaData/pred_smiles/pred_smiles_1.txt", 'w')
 
 for i in range(4):
     f.write('%100s  %100s' % (molecules[i], predictions[i]))
