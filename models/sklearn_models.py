@@ -9,6 +9,7 @@ from keras.layers import Lambda
 from keras.models import load_model
 import os
 import numpy as np
+from rdkit import Chem
 
 class Model_1(BaseEstimator):
     """Estimator Model 1"""
@@ -86,6 +87,31 @@ class Model_1(BaseEstimator):
             predictions = self._predict(X, self.model)
 
         return predictions
+
+    def score(self, X, y=None):
+        """
+        This function takes in smiles strings and scores the model on the predictions.
+
+        :param X: smiles strings
+        :type X: list of strings
+        :param y: None
+        :return: score
+        :rtype: float
+        """
+
+        predictions = self.predict(X)
+
+        n_valid_smiles = 0
+
+        for smile_string in predictions:
+            mol = Chem.MolFromSmiles(smile_string)
+
+            if not isinstance(mol, type(None)):
+                n_valid_smiles += 1
+
+        score = n_valid_smiles/len(predictions)
+
+        return score
 
     def _generate_model(self):
         """
@@ -192,6 +218,16 @@ class Model_1(BaseEstimator):
         return cold_X
 
     def _predict(self, X, model):
+        """
+        This function takes in a list of smiles strings. Then, it takes the first window from each smiles and predicts
+        a full smiles string starting from that window.
+
+        :param X: smiles strings
+        :type: list of smiles strings
+        :param model: the keras model
+        :return: predictions
+        :rtype: list of strings
+        """
 
         n_samples = len(X)
 
@@ -207,7 +243,7 @@ class Model_1(BaseEstimator):
             X_pred_temp = X_pred
 
             while (y_pred[-1] != 'E'):
-                out = self.model.predict(X_pred_temp)  # shape (1, n_feat)
+                out = model.predict(X_pred_temp)  # shape (1, n_feat)
                 y_pred += self._hot_decode(np.reshape(out, (1, out.shape[0], out.shape[1])))[0]
                 X_pred_temp[:, :-1, :] = X_pred[:, 1:, :]
 
@@ -224,7 +260,12 @@ class Model_1(BaseEstimator):
         return all_predictions
 
 class Model_2(BaseEstimator):
-    """Estimator Model 2"""
+    """
+    Estimator Model 2
+
+    This estimator learns from full sequences and can predict new smiles strings starting from any length fragment.
+
+    """
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
                  batch_size=500, nb_epochs=4):
