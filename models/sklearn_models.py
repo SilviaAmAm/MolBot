@@ -120,12 +120,12 @@ class Model_1(BaseEstimator):
     def score_similarity(self, X_1, X_2):
         """
         This function calculates the average Tanimoto similarity between each molecule in X_1 and those in X_2. It
-        returns all the average Tanimoto coefficients.
+        returns all the average Tanimoto coefficients and the percentage of duplicates.
 
         :param X_1: list of smiles strings to compare
         :param X_2: list of smiles strings acting as reference
-        :return: Tanimoto coefficients
-        :rtype: list of floats
+        :return: Tanimoto coefficients and the percentage of duplicates
+        :rtype: list of floats, float
         """
 
         # Making the smiles strings in rdkit molecules
@@ -138,16 +138,22 @@ class Model_1(BaseEstimator):
 
         # Obtaining similarity measure
         tanimoto_coeff = []
+        n_duplicates = 0
 
         for i in range(len(fps_1)):
             sum_tanimoto = 0
             for j in range(len(fps_2)):
-                sum_tanimoto += DataStructs.FingerprintSimilarity(fps_1[i], fps_2[j])
+                coeff = DataStructs.FingerprintSimilarity(fps_1[i], fps_2[j])
+                sum_tanimoto += coeff
+                if coeff == 1:
+                    n_duplicates += 1
 
             avg_tanimoto = sum_tanimoto/len(fps_2)
             tanimoto_coeff.append(avg_tanimoto)
 
-        return tanimoto_coeff
+        percent_duplicates = n_duplicates/len(fps_1)
+
+        return tanimoto_coeff, percent_duplicates
 
     def _make_rdkit_mol(self, X):
         """
@@ -328,7 +334,7 @@ class Model_1(BaseEstimator):
                 if len(y_pred) == 100:
                     break
 
-            if y_pred[-1] != 'E':
+            if y_pred[-1] == 'E':
                 y_pred = y_pred[:-1]
 
             all_predictions.append(y_pred)
@@ -447,6 +453,67 @@ class Model_2(BaseEstimator):
         score = n_valid_smiles/len(predictions)
 
         return score
+
+    def score_similarity(self, X_1, X_2):
+        """
+        This function calculates the average Tanimoto similarity between each molecule in X_1 and those in X_2. It
+        returns all the average Tanimoto coefficients and the percentage of duplicates.
+
+        :param X_1: list of smiles strings to compare
+        :param X_2: list of smiles strings acting as reference
+        :return: Tanimoto coefficients and the percentage of duplicates
+        :rtype: list of floats, float
+        """
+
+        # Making the smiles strings in rdkit molecules
+        mol_1, invalid_1 = self._make_rdkit_mol(X_1)
+        mol_2, invalid_2 = self._make_rdkit_mol(X_2)
+
+        # Turning the molecules in Daylight fingerprints
+        fps_1 = [FingerprintMols.FingerprintMol(x) for x in mol_1]
+        fps_2 = [FingerprintMols.FingerprintMol(x) for x in mol_2]
+
+        # Obtaining similarity measure
+        tanimoto_coeff = []
+        n_duplicates = 0
+
+        for i in range(len(fps_1)):
+            sum_tanimoto = 0
+            for j in range(len(fps_2)):
+                coeff = DataStructs.FingerprintSimilarity(fps_1[i], fps_2[j])
+                sum_tanimoto += coeff
+                if coeff == 1:
+                    n_duplicates += 1
+
+            avg_tanimoto = sum_tanimoto / len(fps_2)
+            tanimoto_coeff.append(avg_tanimoto)
+
+        percent_duplicates = n_duplicates / len(fps_1)
+
+        return tanimoto_coeff, percent_duplicates
+
+    def _make_rdkit_mol(self, X):
+        """
+        This function takes a list of smiles strings and returns a list of rdkit objects for the valid smiles strings.
+
+        :param X: list of smiles
+        :return: list of rdkit objects
+        """
+
+        mol = []
+        invalid = 0
+
+        for smile in X:
+            try:
+                molecule = Chem.MolFromSmiles(smile)
+                if not isinstance(molecule, type(None)):
+                    mol.append(molecule)
+                else:
+                    invalid += 1
+            except Exception:
+                pass
+
+        return mol, invalid
 
     def _hot_encode(self, X):
         """
