@@ -136,6 +136,14 @@ class Model_1(BaseEstimator):
         self.model = model
 
     def _hot_encode(self, X):
+        """
+        This function takes in a list of smiles strings and returns the smiles strings hot encoded split into windows.
+
+        :param X: smiles strings
+        :type X: list of strings
+        :return: hot encoded smiles string in windows
+        :rtype: numpy array of shape (n_samples*n_windows, window_length, n_features)
+        """
 
         if isinstance(self.idx_to_char, type(None)) and isinstance(self.char_to_idx, type(None)):
             all_possible_char = ['G', 'E', 'A']
@@ -149,11 +157,12 @@ class Model_1(BaseEstimator):
                     max_size = len(all_char) + 2
 
                 unique_char = list(set(all_char))
-                unique_char.sort()
 
                 for item in unique_char:
                     if not item in all_possible_char:
                         all_possible_char.append(item)
+
+                all_possible_char.sort()
 
                 molecule = 'G' + molecule + 'E'
                 new_molecules.append(molecule)
@@ -237,7 +246,7 @@ class Model_1(BaseEstimator):
 
         for i in range(0, n_samples):
             X_hot, _ = self._hot_encode([X[i]])
-            X_pred = X_hot[i, :, :]  # shape (window_size, n_feat)
+            X_pred = X_hot[0, :, :]  # predicting from the first window
             X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))  # shape (1, window_size, n_feat)
 
             y_pred = self._hot_decode(X_pred)[0]
