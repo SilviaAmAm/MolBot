@@ -1,0 +1,38 @@
+estimator:
+  pickle: model.pickle
+
+strategy:
+  name: random
+  #params:
+  #  seeds: 5
+
+search_space:
+  hidden_neurons_1:
+    min: 50
+    max: 500
+    type: int
+
+  hidden_neurons_2:
+    min: 50
+    max: 500
+    type: int
+
+  window_length:
+    min: 3
+    max: 20
+    type: int
+   
+cv:
+  name: kfold
+  params:
+    n_splits: 3
+    shuffle: True
+
+dataset_loader:
+  name: numpy
+  params:
+    filenames: molecules.npy
+
+trials:
+    uri: sqlite:///osprey-trials.db
+

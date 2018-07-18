@@ -3,3 +3,7 @@ tb/
 saved_models/
 pred_smiles/
 notebooks/
+*.npy
+*.pickle
+*.db
+examples/osprey/sklearn_models.py
