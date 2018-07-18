@@ -10,6 +10,8 @@ from keras.models import load_model
 import os
 import numpy as np
 from rdkit import Chem
+from rdkit.Chem.Fingerprints import FingerprintMols
+from rdkit import DataStructs
 
 class Model_1(BaseEstimator):
     """Estimator Model 1"""
@@ -114,6 +116,61 @@ class Model_1(BaseEstimator):
         score = n_valid_smiles/len(predictions)
 
         return score
+
+    def score_similarity(self, X_1, X_2):
+        """
+        This function calculates the average Tanimoto similarity between each molecule in X_1 and those in X_2. It
+        returns all the average Tanimoto coefficients.
+
+        :param X_1: list of smiles strings to compare
+        :param X_2: list of smiles strings acting as reference
+        :return: Tanimoto coefficients
+        :rtype: list of floats
+        """
+
+        # Making the smiles strings in rdkit molecules
+        mol_1, invalid_1 = self._make_rdkit_mol(X_1)
+        mol_2, invalid_2 = self._make_rdkit_mol(X_2)
+
+        # Turning the molecules in Daylight fingerprints
+        fps_1 = [FingerprintMols.FingerprintMol(x) for x in mol_1]
+        fps_2 = [FingerprintMols.FingerprintMol(x) for x in mol_2]
+
+        # Obtaining similarity measure
+        tanimoto_coeff = []
+
+        for i in range(len(fps_1)):
+            sum_tanimoto = 0
+            for j in range(len(fps_2)):
+                sum_tanimoto += DataStructs.FingerprintSimilarity(fps_1[i], fps_2[j])
+
+            avg_tanimoto = sum_tanimoto/len(fps_2)
+            tanimoto_coeff.append(avg_tanimoto)
+
+        return tanimoto_coeff
+
+    def _make_rdkit_mol(self, X):
+        """
+        This function takes a list of smiles strings and returns a list of rdkit objects for the valid smiles strings.
+
+        :param X: list of smiles
+        :return: list of rdkit objects
+        """
+
+        mol = []
+        invalid = 0
+
+        for smile in X:
+            try:
+                molecule = Chem.MolFromSmiles(smile)
+                if not isinstance(molecule, type(None)):
+                    mol.append(molecule)
+                else:
+                    invalid += 1
+            except Exception:
+                pass
+
+        return mol, invalid
 
     def _generate_model(self):
         """
@@ -243,13 +300,18 @@ class Model_1(BaseEstimator):
         n_samples = len(X)
 
         all_predictions = []
+        X_hot, _ = self._hot_encode(X)
+
+        n_windows = 0
+        idx_first_window = 0
 
         for i in range(0, n_samples):
-            X_hot, _ = self._hot_encode([X[i]])
-            X_pred = X_hot[0, :, :]  # predicting from the first window
+            idx_first_window += n_windows
+
+            X_pred = X_hot[idx_first_window, :, :]  # predicting from the first window
             X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))  # shape (1, window_size, n_feat)
 
-            y_pred = self._hot_decode(X_pred)[0]
+            y_pred = X[i][:self.window_length]
 
             X_pred_temp = X_pred
 
@@ -266,7 +328,12 @@ class Model_1(BaseEstimator):
                 if len(y_pred) == 100:
                     break
 
+            if y_pred[-1] != 'E':
+                y_pred = y_pred[:-1]
+
             all_predictions.append(y_pred)
+
+            n_windows = len(X[i]) - self.window_length + 2
 
         return all_predictions
 
