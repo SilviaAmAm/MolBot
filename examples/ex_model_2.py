@@ -25,6 +25,8 @@ for i in range(4):
 
 predictions = estimator.predict(fragments)
 
+score = estimator.score()
+
 f = open("/Volumes/Transcend/repositories/NovaData/pred_smiles/pred_smiles_2.txt", 'w')
 
 for i in range(4):

@@ -104,10 +104,12 @@ class Model_1(BaseEstimator):
         n_valid_smiles = 0
 
         for smile_string in predictions:
-            mol = Chem.MolFromSmiles(smile_string)
-
-            if not isinstance(mol, type(None)):
-                n_valid_smiles += 1
+            try:
+                mol = Chem.MolFromSmiles(smile_string)
+                if not isinstance(mol, type(None)):
+                    n_valid_smiles += 1
+            except Exception:
+                pass
 
         score = n_valid_smiles/len(predictions)
 
@@ -342,6 +344,33 @@ class Model_2(BaseEstimator):
         """
 
         self.loaded_model = load_model(filename)
+
+    def score(self, X=None, y=None):
+        """
+        This function takes in smiles strings and scores the model on the predictions.
+
+        :param X: smiles strings or nothing
+        :type X: list of strings
+        :param y: None
+        :return: score
+        :rtype: float
+        """
+
+        predictions = self.predict(X)
+
+        n_valid_smiles = 0
+
+        for smile_string in predictions:
+            try:
+                mol = Chem.MolFromSmiles(smile_string)
+                if not isinstance(mol, type(None)):
+                    n_valid_smiles += 1
+            except Exception:
+                pass
+
+        score = n_valid_smiles/len(predictions)
+
+        return score
 
     def _hot_encode(self, X):
         """

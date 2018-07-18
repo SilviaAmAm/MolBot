@@ -17,9 +17,13 @@ for line in in_d:
 
 estimator = sklearn_models.Model_1(nb_epochs=3)
 
-estimator.fit(molecules[:4])
+estimator.fit(molecules)
 
-predictions = estimator.predict(molecules[:4])
+predictions = estimator.predict(molecules)
+
+score = estimator.score(molecules)
+
+print(score)
 
 f = open("/Volumes/Transcend/repositories/NovaData/pred_smiles/pred_smiles_1.txt", 'w')
 
