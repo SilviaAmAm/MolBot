@@ -29,9 +29,9 @@ cv:
     shuffle: True
 
 dataset_loader:
-  name: numpy
+  name: dsv
   params:
-    filenames: molecules.npy
+    filenames: idx.csv
 
 trials:
     uri: sqlite:///osprey-trials.db

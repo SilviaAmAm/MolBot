@@ -32,6 +32,16 @@ class Model_1(BaseEstimator):
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
+        self.stored_data = None
+
+    def store_data(self, X):
+        """
+        This function takes in a list of smiles strings and stores it. This is needed to use osprey.
+        :param X: list of smiles strings
+        :type X: list of strings
+        :return: None
+        """
+        self.stored_data = X
 
     def fit(self, X, y=None):
         """
@@ -40,6 +50,11 @@ class Model_1(BaseEstimator):
         :param y: None
         :return: None
         """
+
+
+        print(type(self.stored_data))
+        if not isinstance(self.stored_data, type(None)):
+            X = self.stored_data[X]
 
         X_hot, y_hot = self._hot_encode(X)
 
@@ -79,6 +94,9 @@ class Model_1(BaseEstimator):
         :rtype: list of strings
         """
 
+        if not isinstance(self.stored_data, type(None)):
+            X = self.stored_data[X]
+
         if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
             raise Exception("The model has not been fit and no saved model has been loaded.\n")
 
@@ -100,6 +118,9 @@ class Model_1(BaseEstimator):
         :return: score
         :rtype: float
         """
+
+        if not isinstance(self.stored_data, type(None)):
+            X = self.stored_data[X]
 
         predictions = self.predict(X)
 
