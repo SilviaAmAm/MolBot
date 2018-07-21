@@ -17,7 +17,7 @@ class Model_1(BaseEstimator):
     """Estimator Model 1"""
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size=500, nb_epochs=4, window_length=10):
+                 batch_size=500, nb_epochs=4, window_length=10, smiles=None):
 
         self.tensorboard = tensorboard
         self.hidden_neurons_1 = hidden_neurons_1
@@ -32,16 +32,8 @@ class Model_1(BaseEstimator):
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
-        self.stored_data = None
-
-    def store_data(self, X):
-        """
-        This function takes in a list of smiles strings and stores it. This is needed to use osprey.
-        :param X: list of smiles strings
-        :type X: list of strings
-        :return: None
-        """
-        self.stored_data = X
+        self.smiles = smiles
+        self.X_hot, self.y_hot = self._hot_encode(smiles)
 
     def fit(self, X, y=None):
         """
@@ -51,12 +43,13 @@ class Model_1(BaseEstimator):
         :return: None
         """
 
-
-        print(type(self.stored_data))
-        if not isinstance(self.stored_data, type(None)):
-            X = self.stored_data[X]
-
-        X_hot, y_hot = self._hot_encode(X)
+        if not isinstance(self.smiles, type(None)):
+            window_idx = self.idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
+            X_hot = np.asarray([self.X_hot[i] for i in window_idx])
+            y_hot = np.asarray([self.y_hot[i] for i in window_idx])
+        else:
+            X_strings = X
+            X_hot, y_hot = self._hot_encode(X_strings)
 
         self.n_samples = X_hot.shape[0]
         self.max_size = X_hot.shape[1]
@@ -94,17 +87,22 @@ class Model_1(BaseEstimator):
         :rtype: list of strings
         """
 
-        if not isinstance(self.stored_data, type(None)):
-            X = self.stored_data[X]
+        if not isinstance(self.smiles, type(None)):
+            X_strings = [self.smiles[int(i)] for i in X]
+            window_idx = self.idx_to_window_idx(X)
+            X_hot = np.asarray([self.X_hot[i] for i in window_idx])
+        else:
+            X_strings = X
+            X_hot, _ = self._hot_encode(X_strings)
 
         if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
             raise Exception("The model has not been fit and no saved model has been loaded.\n")
 
         elif isinstance(self.model, type(None)):
-            predictions = self._predict(X, self.loaded_model)
+            predictions = self._predict(X_strings, X_hot, self.loaded_model)
 
         else:
-            predictions = self._predict(X, self.model)
+            predictions = self._predict(X_strings, X_hot, self.model)
 
         return predictions
 
@@ -118,9 +116,6 @@ class Model_1(BaseEstimator):
         :return: score
         :rtype: float
         """
-
-        if not isinstance(self.stored_data, type(None)):
-            X = self.stored_data[X]
 
         predictions = self.predict(X)
 
@@ -172,7 +167,10 @@ class Model_1(BaseEstimator):
             avg_tanimoto = sum_tanimoto/len(fps_2)
             tanimoto_coeff.append(avg_tanimoto)
 
-        percent_duplicates = n_duplicates/len(fps_1)
+        if len(fps_1) != 0:
+            percent_duplicates = n_duplicates/len(fps_1)
+        else:
+            percent_duplicates = 1
 
         return tanimoto_coeff, percent_duplicates
 
@@ -267,10 +265,14 @@ class Model_1(BaseEstimator):
         window_X = []
         window_y = []
 
+        self.idx_to_window = []
+        counter = 0
         for mol in new_molecules:
+            self.idx_to_window.append(counter)
             for i in range(len(mol) - self.window_length):
                 window_X.append(mol[i:i+self.window_length])
                 window_y.append(mol[i+self.window_length])
+                counter += 1
 
         # One hot encoding
         n_samples = len(window_X)
@@ -312,7 +314,7 @@ class Model_1(BaseEstimator):
 
         return cold_X
 
-    def _predict(self, X, model):
+    def _predict(self, X_strings, X_hot, model):
         """
         This function takes in a list of smiles strings. Then, it takes the first window from each smiles and predicts
         a full smiles string starting from that window.
@@ -324,10 +326,9 @@ class Model_1(BaseEstimator):
         :rtype: list of strings
         """
 
-        n_samples = len(X)
+        n_samples = len(X_strings)
 
         all_predictions = []
-        X_hot, _ = self._hot_encode(X)
 
         n_windows = 0
         idx_first_window = 0
@@ -338,7 +339,7 @@ class Model_1(BaseEstimator):
             X_pred = X_hot[idx_first_window, :, :]  # predicting from the first window
             X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))  # shape (1, window_size, n_feat)
 
-            y_pred = X[i][:self.window_length]
+            y_pred = X_strings[i][:self.window_length]
 
             X_pred_temp = X_pred
 
@@ -360,9 +361,32 @@ class Model_1(BaseEstimator):
 
             all_predictions.append(y_pred)
 
-            n_windows = len(X[i]) - self.window_length + 2
+            n_windows = len(X_strings[i]) - self.window_length + 2
 
         return all_predictions
+
+    def idx_to_window_idx(self, idx):
+        """
+        This function takes the indices of the smiles strings and returns the indices of the corresponding windows.
+        :param idx: list of ints
+        :return:  list of ints
+        """
+
+        window_idx = []
+
+        for i, idx_start in enumerate(idx):
+            if idx_start < len(self.idx_to_window)-1:
+                w_idx_start = self.idx_to_window[int(idx[i])]
+                w_idx_end = self.idx_to_window[int(idx[i])+1]       # idx where the next sample starts
+                for j in range(w_idx_start, w_idx_end):
+                    window_idx.append(j)
+            else:
+                w_idx_start = self.idx_to_window[int(idx[i])]
+                w_idx_end = self.X_hot.shape[0]
+                for j in range(w_idx_start, w_idx_end):
+                    window_idx.append(j)
+
+        return window_idx
 
 class Model_2(BaseEstimator):
     """

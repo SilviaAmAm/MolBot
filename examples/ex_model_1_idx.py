@@ -1,10 +1,8 @@
 import sys
 sys.path.append('/Volumes/Transcend/repositories/NovaData/models/')
 import sklearn_models
-import pickle
-import numpy as np
+import time
 
-# making dataset
 in_d = open("/Volumes/Transcend/repositories/NovaData/data/bioactivity_PPARg_filtered.csv", 'r')
 
 molecules = []
@@ -18,15 +16,20 @@ for line in in_d:
     else:
         molecules.append(molecule)
 
-# mol_array = np.asarray(molecules)
+estimator = sklearn_models.Model_1(nb_epochs=1, smiles=molecules, batch_size=5000)
 
-estimator = sklearn_models.Model_1(nb_epochs=1, batch_size=1000 ,smiles=molecules)
+idx_train = range(int(len(molecules)))
 
-pickle.dump(estimator, open('model.pickle', 'wb'))
+estimator.fit(idx_train)
 
 
-# print(estimator.stored_data.shape)
 
-with open('idx.csv', 'w') as f:
-    for i in range(len(molecules)):
-        f.write('%s\n' % i)
+start = time.time()
+predictions = estimator.predict(range(5))
+end = time.time()
+print("The time taken to predict is %f" % (end-start))
+
+score = estimator.score(range(5))
+print(score)
+
+tanimoto = estimator.score_similarity(predictions, molecules[:5])
