@@ -12,9 +12,14 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem.Fingerprints import FingerprintMols
 from rdkit import DataStructs
+from utils import is_positive_integer_or_zero_array, InputError
 
 class Model_1(BaseEstimator):
-    """Estimator Model 1"""
+    """
+    Estimator Model 1
+
+    This estimator learns from segments of smiles strings all of the same length and the next character along the sequence.
+    When presented with a new smiles fragment it predicts the most likely next character."""
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
                  batch_size=500, nb_epochs=4, window_length=10, smiles=None):
@@ -33,7 +38,8 @@ class Model_1(BaseEstimator):
         self.idx_to_char = None
         self.char_to_idx = None
         self.smiles = smiles
-        self.X_hot, self.y_hot = self._hot_encode(smiles)
+        if not isinstance(self.smiles, type(None)):
+            self.X_hot, self.y_hot = self._hot_encode(smiles)
 
     def fit(self, X, y=None):
         """
@@ -44,6 +50,9 @@ class Model_1(BaseEstimator):
         """
 
         if not isinstance(self.smiles, type(None)):
+            if not is_positive_integer_or_zero_array(X):
+                raise InputError("The indices need to be positive or zero integers.")
+
             window_idx = self.idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
             y_hot = np.asarray([self.y_hot[i] for i in window_idx])
@@ -73,6 +82,11 @@ class Model_1(BaseEstimator):
         print("Saved model in directory: " + dir + "\n")
 
     def load(self, filename):
+        """
+        This function loads a model that has been previously saved.
+        :param filename: string
+        :return: None
+        """
 
         self.loaded_model = load_model(filename)
 
@@ -397,7 +411,8 @@ class Model_2(BaseEstimator):
     """
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size=500, nb_epochs=4):
+                 batch_size=500, nb_epochs=4, smiles=None):
+
         self.tensorboard = tensorboard
         self.hidden_neurons_1 = hidden_neurons_1
         self.hidden_neurons_2 = hidden_neurons_2
@@ -410,6 +425,9 @@ class Model_2(BaseEstimator):
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
+        self.smiles = smiles
+        if not isinstance(self.smiles, type(None)):
+            self.X_hot, self.y_hot = self._hot_encode(smiles)
 
     def fit(self, X, y=None):
         """
@@ -418,8 +436,14 @@ class Model_2(BaseEstimator):
         :param y: None
         :return: None
         """
+        if not isinstance(self.smiles, type(None)):
+            if not is_positive_integer_or_zero_array(X):
+                raise InputError("The indices need to be positive or zero integers.")
 
-        X_hot, y_hot = self._hot_encode(X)
+            X_hot = np.asarray([self.X_hot[i] for i in X])
+            y_hot = np.asarray([self.y_hot[i] for i in X])
+        else:
+            X_hot, y_hot = self._hot_encode(X)
 
         self.n_samples = X_hot.shape[0]
         self.max_size = X_hot.shape[1]
@@ -435,24 +459,39 @@ class Model_2(BaseEstimator):
         else:
             self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
 
-    def predict(self, X=None):
+    def predict(self, X=None, frag_length=5):
         """
         This function predicts new strings starting from a G or from a fragment. It carries on predicting until the 
         character 'E' is output or until the string has reached the maximum length present in the training set.
         
-        :param X: one or more smile strings
+        :param X: one or more smile strings or None
         :type: list of strings
+        :param frag_length: The length of the fragment to use for prediction
         :return: predictions
         :rtype: list of strings
         """
+
+        if isinstance(X, type(None)):
+            X_hot = None
+            X_strings = None
+        elif not isinstance(self.smiles, type(None)):
+            if not is_positive_integer_or_zero_array(X):
+                raise InputError("The indices need to be positive or zero integers.")
+
+            X_hot = np.asarray([self.X_hot[i][:frag_length] for i in X])
+            X_strings = np.asarray([self.smiles[i][:frag_length] for i in X])
+        else:
+            X_hot, y_hot = self._hot_encode(X)
+            X_strings = X
+
         if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
             raise Exception("The model has not been fit and no saved model has been loaded.\n")
 
         elif isinstance(self.model, type(None)):
-            predictions = self._predict(X, self.loaded_model)
+            predictions = self._predict(X_strings, X_hot, self.loaded_model)
 
         else:
-            predictions = self._predict(X, self.model)
+            predictions = self._predict(X_strings, X_hot, self.model)
 
         return predictions
 
@@ -533,7 +572,10 @@ class Model_2(BaseEstimator):
             avg_tanimoto = sum_tanimoto / len(fps_2)
             tanimoto_coeff.append(avg_tanimoto)
 
-        percent_duplicates = n_duplicates / len(fps_1)
+        if len(fps_1) != 0:
+            percent_duplicates = n_duplicates/len(fps_1)
+        else:
+            percent_duplicates = 1
 
         return tanimoto_coeff, percent_duplicates
 
@@ -665,9 +707,18 @@ class Model_2(BaseEstimator):
 
         self.model = model
         
-    def _predict(self, X, model):
+    def _predict(self, X_strings, X_hot, model):
+        """
+        This function either takes in  smiles strings fragments and their hot encoded version, or it takes in nothing
+        and generates smiles strings from scratch.
+
+        :param X_strings: Fragment of smiles string or None
+        :param X_hot: Hot encoded version of X
+        :param model: the model to be used (either the current model or a loaded model)
+        :return: predictions of smiles strings
+        """
         
-        if isinstance(X, type(None)):
+        if isinstance(X_hot, type(None)):
             X_pred = np.zeros((1, self.max_size, self.n_feat))
             y_pred = 'G'
             X_pred[0, 0, self.char_to_idx['G']] = 1
@@ -681,20 +732,21 @@ class Model_2(BaseEstimator):
                 else:
                     y_pred += self.idx_to_char[idx_out]
 
+            if y_pred[-1] == 'E':
+                y_pred = y_pred[:-1]
+            if y_pred[0] == 'G':
+                y_pred = y_pred[1:]
+
             return y_pred
                     
         else:
-            n_samples = len(X)
+            n_samples = len(X_hot)
 
             all_predictions = []
 
-            X_hot, _ = self._hot_encode(X)
-
-
-
             for n in range(0, n_samples):
                 X_pred = X_hot[n]  # shape (fragment_length, n_feat)
-                y_pred = X[n]
+                y_pred = X_strings[n]
 
                 while y_pred[-1] != 'E':
                     X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))  # shape (1, fragment_length, n_feat)
@@ -708,6 +760,8 @@ class Model_2(BaseEstimator):
                     if len(y_pred) == 100:
                         break
 
+                if y_pred[-1] == 'E':
+                    y_pred = y_pred[:-1]
                 all_predictions.append(y_pred)
 
             return all_predictions
