@@ -20,9 +20,9 @@ for line in in_d:
 estimator = sklearn_models.Model_2(nb_epochs=1, smiles=molecules)
 
 
-estimator.fit(list(range(100)))
-
-estimator.save()
+# estimator.fit(list(range(100)))
+#
+# estimator.save()
 
 estimator.load("./saved_models/model_2.h5")
-estimator.continue_fit(list(range(100)))
+estimator.fit(list(range(100)))

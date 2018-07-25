@@ -64,39 +64,10 @@ class Model_1(BaseEstimator):
         self.max_size = X_hot.shape[1]
         self.n_feat = X_hot.shape[2]
 
-        self._generate_model()
 
-        if self.tensorboard == True:
-            tensorboard = TensorBoard(log_dir='./tb/model_1',
-                                      write_graph=True, write_images=False)
-            callbacks_list = [tensorboard]
-            self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
-        else:
-            self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
+        if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
+            self._generate_model()
 
-    def continue_fit(self, X):
-        """
-        This function enables to resume training from either a loaded model or a model in the same session.
-
-        :param X: list of smiles strings
-        :return: None
-        """
-        if not isinstance(self.smiles, type(None)):
-            if not is_positive_integer_or_zero_array(X):
-                raise InputError("The indices need to be positive or zero integers.")
-
-            window_idx = self.idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
-            X_hot = np.asarray([self.X_hot[i] for i in window_idx])
-            y_hot = np.asarray([self.y_hot[i] for i in window_idx])
-        else:
-            X_strings = X
-            X_hot, y_hot = self._hot_encode(X_strings)
-
-        self.n_samples = X_hot.shape[0]
-        self.max_size = X_hot.shape[1]
-        self.n_feat = X_hot.shape[2]
-
-        if not isinstance(self.model, type(None)):
             if self.tensorboard == True:
                 tensorboard = TensorBoard(log_dir='./tb/model_1',
                                           write_graph=True, write_images=False)
@@ -104,6 +75,16 @@ class Model_1(BaseEstimator):
                 self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
             else:
                 self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
+
+        elif not isinstance(self.model, type(None)):
+            if self.tensorboard == True:
+                tensorboard = TensorBoard(log_dir='./tb/model_1',
+                                          write_graph=True, write_images=False)
+                callbacks_list = [tensorboard]
+                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
+            else:
+                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
+
         elif not isinstance(self.loaded_model, type(None)):
             if self.tensorboard == True:
                 tensorboard = TensorBoard(log_dir='./tb/model_1',
@@ -112,6 +93,7 @@ class Model_1(BaseEstimator):
                 self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
             else:
                 self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
+
         else:
             raise InputError("No model has been fit already or has been loaded.")
 
@@ -490,38 +472,9 @@ class Model_2(BaseEstimator):
         self.max_size = X_hot.shape[1]
         self.n_feat = X_hot.shape[2]
 
-        self._generate_model()
+        if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
+            self._generate_model()
 
-        if self.tensorboard == True:
-            tensorboard = TensorBoard(log_dir='./tb/model_1',
-                                      write_graph=True, write_images=False)
-            callbacks_list = [tensorboard]
-            self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
-        else:
-            self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
-
-    def continue_fit(self, X):
-        """
-        This function enables to resume training from either a loaded model or a model in the same session.
-
-        :param X: list of smiles strings
-        :return: None
-        """
-
-        if not isinstance(self.smiles, type(None)):
-            if not is_positive_integer_or_zero_array(X):
-                raise InputError("The indices need to be positive or zero integers.")
-
-            X_hot = np.asarray([self.X_hot[i] for i in X])
-            y_hot = np.asarray([self.y_hot[i] for i in X])
-        else:
-            X_hot, y_hot = self._hot_encode(X)
-
-        self.n_samples = X_hot.shape[0]
-        self.max_size = X_hot.shape[1]
-        self.n_feat = X_hot.shape[2]
-
-        if not isinstance(self.model, type(None)):
             if self.tensorboard == True:
                 tensorboard = TensorBoard(log_dir='./tb/model_1',
                                           write_graph=True, write_images=False)
@@ -529,17 +482,26 @@ class Model_2(BaseEstimator):
                 self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
             else:
                 self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
+        elif not isinstance(self.model, type(None)):
+            if self.tensorboard == True:
+                tensorboard = TensorBoard(log_dir='./tb/model_1',
+                                          write_graph=True, write_images=False)
+                callbacks_list = [tensorboard]
+                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               callbacks=callbacks_list)
+            else:
+                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
         elif not isinstance(self.loaded_model, type(None)):
             if self.tensorboard == True:
                 tensorboard = TensorBoard(log_dir='./tb/model_1',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
+                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                                      callbacks=callbacks_list)
             else:
                 self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
         else:
             raise InputError("No model has been fit already or has been loaded.")
-
 
     def predict(self, X=None, frag_length=5):
         """
