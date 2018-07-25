@@ -14,15 +14,13 @@ from rdkit.Chem.Fingerprints import FingerprintMols
 from rdkit import DataStructs
 from utils import is_positive_integer_or_zero_array, InputError
 
-class Model_1(BaseEstimator):
+class _Model(BaseEstimator):
     """
-    Estimator Model 1
+    This is the parent class to the to different models.
+    """
 
-    This estimator learns from segments of smiles strings all of the same length and the next character along the sequence.
-    When presented with a new smiles fragment it predicts the most likely next character."""
-
-    def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size=500, nb_epochs=4, window_length=10, smiles=None):
+    def __init__(self, tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
+                 batch_size, nb_epochs, smiles):
 
         self.tensorboard = tensorboard
         self.hidden_neurons_1 = hidden_neurons_1
@@ -31,106 +29,65 @@ class Model_1(BaseEstimator):
         self.dropout_2 = dropout_2
         self.batch_size = batch_size
         self.nb_epochs = nb_epochs
-        self.window_length = window_length
 
         self.model = None
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
         self.smiles = smiles
-        if not isinstance(self.smiles, type(None)):
-            self.X_hot, self.y_hot = self._hot_encode(smiles)
 
-    def fit(self, X, y=None):
+    def fit(self, X):
         """
-        This function takes in a list of smiles strings and hot encodes them before fitting the model to them.
-        :param X: list of smiles strings
-        :param y: None
+        This function fits the parameters of a GRNN to the data provided.
+        :param X: list of smiles or list of indices of the smiles to use
+        :type X: list of strings or list of ints
         :return: None
         """
 
-        if not isinstance(self.smiles, type(None)):
-            if not is_positive_integer_or_zero_array(X):
-                raise InputError("The indices need to be positive or zero integers.")
-
-            window_idx = self.idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
-            X_hot = np.asarray([self.X_hot[i] for i in window_idx])
-            y_hot = np.asarray([self.y_hot[i] for i in window_idx])
-        else:
-            X_strings = X
-            X_hot, y_hot = self._hot_encode(X_strings)
+        X_hot, y_hot = self._initialise_data_fit(X)
 
         self.n_samples = X_hot.shape[0]
         self.max_size = X_hot.shape[1]
         self.n_feat = X_hot.shape[2]
 
-
         if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
             self._generate_model()
 
             if self.tensorboard == True:
-                tensorboard = TensorBoard(log_dir='./tb/model_1',
+                tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
+                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               callbacks=callbacks_list)
             else:
                 self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
 
         elif not isinstance(self.model, type(None)):
             if self.tensorboard == True:
-                tensorboard = TensorBoard(log_dir='./tb/model_1',
+                tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
+                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               callbacks=callbacks_list)
             else:
                 self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
 
         elif not isinstance(self.loaded_model, type(None)):
             if self.tensorboard == True:
-                tensorboard = TensorBoard(log_dir='./tb/model_1',
+                tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
+                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                                      callbacks=callbacks_list)
             else:
                 self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
 
         else:
             raise InputError("No model has been fit already or has been loaded.")
 
-    def save(self, dir='./saved_models/'):
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        filename = dir + "model_1.h5"
-        self.model.save(filename, overwrite=True)
-        print("Saved model in directory: " + dir + "\n")
+    def predict(self, X, frag_length=5):
 
-    def load(self, filename):
-        """
-        This function loads a model that has been previously saved.
-        :param filename: string
-        :return: None
-        """
-
-        self.loaded_model = load_model(filename)
-
-    def predict(self, X):
-        """
-        This takes a complete smiles string and takes the first window and then predicts the following characters until
-        the 'E' is produced. if the 'E' is not produced then it cuts it when it reaches 100 characters.
-
-        :param X: Set of full smiles strings
-        :type X: list of strings
-        :return: predicted smiles strings
-        :rtype: list of strings
-        """
-
-        if not isinstance(self.smiles, type(None)):
-            X_strings = [self.smiles[int(i)] for i in X]
-            window_idx = self.idx_to_window_idx(X)
-            X_hot = np.asarray([self.X_hot[i] for i in window_idx])
-        else:
-            X_strings = X
-            X_hot, _ = self._hot_encode(X_strings)
+        X_strings, X_hot = self._initialise_data_predict(X, frag_length)
 
         if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
             raise Exception("The model has not been fit and no saved model has been loaded.\n")
@@ -143,13 +100,13 @@ class Model_1(BaseEstimator):
 
         return predictions
 
-    def score(self, X, y=None):
+    def score(self, X):
         """
-        This function takes in smiles strings and scores the model on the predictions.
+        This function takes in smiles strings and scores the model on the predictions. The score is the percentage of
+         valid smiles strings that have been predicted.
 
         :param X: smiles strings
         :type X: list of strings
-        :param y: None
         :return: score
         :rtype: float
         """
@@ -211,6 +168,29 @@ class Model_1(BaseEstimator):
 
         return tanimoto_coeff, percent_duplicates
 
+    def save(self, filename='model.h5'):
+        """
+        This function enables to save the trained model so that then training or predictions can be done at a later stage.
+
+        :param filename: Name of the file in which to save the model.
+        :return: None
+        """
+        if not isinstance(self.model, type(None)):
+            self.model.save(filename, overwrite=False)
+        elif not isinstance(self.loaded_model, type(None)):
+            self.loaded_model.save(filename, overwrite=False)
+        else:
+            raise InputError("No model to be saved.")
+
+    def load(self, filename='model.h5'):
+        """
+        This function loads a model that has been previously saved.
+        :param filename: Name of the file in which the model has been previously saved.
+        :return: None
+        """
+
+        self.loaded_model = load_model(filename)
+
     def _make_rdkit_mol(self, X):
         """
         This function takes a list of smiles strings and returns a list of rdkit objects for the valid smiles strings.
@@ -233,6 +213,98 @@ class Model_1(BaseEstimator):
                 pass
 
         return mol, invalid
+
+
+class Model_1(_Model):
+    """
+    Estimator Model 1
+
+    This estimator learns from segments of smiles strings all of the same length and the next character along the sequence.
+    When presented with a new smiles fragment it predicts the most likely next character."""
+
+    def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
+                 batch_size=500, nb_epochs=4, window_length=10, smiles=None):
+        """
+        This function uses the initialiser of the parent class and initialises the window length.
+
+        :param tensorboard: whether to log progress to tensorboard or not
+        :type tensorboard: bool
+        :param hidden_neurons_1: number of hidden units in the first LSTM
+        :type hidden_neurons_1: int
+        :param hidden_neurons_2: number of hidden units in the second LSTM
+        :type hidden_neurons_2: int
+        :param dropout_1: dropout rate in the first LSTM
+        :type dropout_1: float
+        :param dropout_2:  dropout rate in the 2nd LSTM
+        :type dropout_2: float
+        :param batch_size: Size of the data set batches to use during training
+        :type batch_size: int
+        :param nb_epochs: number of iterations of training
+        :type nb_epochs: int
+        :param window_length: size of the smiles fragments from which to learn
+        :type window_length: int
+        :param smiles: list of smiles strings from which to learn
+        :type smiles: list of strings
+        """
+
+        super(Model_1, self).__init__(tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
+                 batch_size, nb_epochs, smiles)
+
+        self.window_length = window_length
+
+        if not isinstance(self.smiles, type(None)):
+            self.X_hot, self.y_hot = self._hot_encode(smiles)
+
+    def _initialise_data_fit(self, X):
+        """
+        This function checks whether the smiles strings are stored in the class. Then it checks that X is a list of
+        indices specifying which data samples to use. Then, it returns the appropriate fragments of smiles strings hot
+        encoded.
+
+        :param X: either list of smiles strings or indices.
+        :type X: either list of strings or list of ints
+        :return: the fragments of smiles strings hot encoded and the following character
+        :rtype: numpy arrays of shape (n_samples, n_window_length, n_unique characters) and (n_samples, n_unique_characters)
+        """
+
+        if not isinstance(self.smiles, type(None)):
+            if not is_positive_integer_or_zero_array(X):
+                raise InputError("The indices need to be positive or zero integers.")
+
+            window_idx = self.idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
+            X_hot = np.asarray([self.X_hot[i] for i in window_idx])
+            y_hot = np.asarray([self.y_hot[i] for i in window_idx])
+        else:
+            X_strings = X
+            X_hot, y_hot = self._hot_encode(X_strings)
+
+        return X_hot, y_hot
+
+    def _initialise_data_predict(self, X, frag_length):
+        """
+        X can either be a list of smiles strings or the indices to the samples to be used for prediction. In the latter
+        case, the data needs to have been stored inside the class.
+
+        This function takes the smiles strings and splits them into fragments (of length specified by the window length)
+        to be used for predictions. The first fragment of each smile is used for prediction.
+
+        :param X: list of smiles or list of indices
+        :type X: list of strings or list of ints
+        :param frag_length: parameter not needed for model 1
+        :return: list of the first fragment of each smile string specified and its one-hot encoded version.
+        :rtype: list of strings, numpy array of shape (n_samples, n_window_length, n_unique_char)
+        """
+
+
+        if not isinstance(self.smiles, type(None)):
+            X_strings = [self.smiles[int(i)] for i in X]
+            window_idx = self.idx_to_window_idx(X)
+            X_hot = np.asarray([self.X_hot[i] for i in window_idx])
+        else:
+            X_strings = X
+            X_hot, _ = self._hot_encode(X_strings)
+
+        return X_strings, X_hot
 
     def _generate_model(self):
         """
@@ -425,7 +497,7 @@ class Model_1(BaseEstimator):
 
         return window_idx
 
-class Model_2(BaseEstimator):
+class Model_2(_Model):
     """
     Estimator Model 2
 
@@ -435,30 +507,45 @@ class Model_2(BaseEstimator):
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
                  batch_size=500, nb_epochs=4, smiles=None):
+        """
+            This function uses the initialiser of the parent class and initialises the window length.
 
-        self.tensorboard = tensorboard
-        self.hidden_neurons_1 = hidden_neurons_1
-        self.hidden_neurons_2 = hidden_neurons_2
-        self.dropout_1 = dropout_1
-        self.dropout_2 = dropout_2
-        self.batch_size = batch_size
-        self.nb_epochs = nb_epochs
+            :param tensorboard: whether to log progress to tensorboard or not
+            :type tensorboard: bool
+            :param hidden_neurons_1: number of hidden units in the first LSTM
+            :type hidden_neurons_1: int
+            :param hidden_neurons_2: number of hidden units in the second LSTM
+            :type hidden_neurons_2: int
+            :param dropout_1: dropout rate in the first LSTM
+            :type dropout_1: float
+            :param dropout_2:  dropout rate in the 2nd LSTM
+            :type dropout_2: float
+            :param batch_size: Size of the data set batches to use during training
+            :type batch_size: int
+            :param nb_epochs: number of iterations of training
+            :type nb_epochs: int
+            :param smiles: list of smiles strings from which to learn
+            :type smiles: list of strings
+            """
 
-        self.model = None
-        self.loaded_model = None
-        self.idx_to_char = None
-        self.char_to_idx = None
-        self.smiles = smiles
+        super(Model_2, self).__init__(tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
+                                     batch_size, nb_epochs, smiles)
+
         if not isinstance(self.smiles, type(None)):
             self.X_hot, self.y_hot = self._hot_encode(smiles)
 
-    def fit(self, X, y=None):
+    def _initialise_data_fit(self, X):
         """
-        This function takes in a list of smiles strings and hot encodes them before fitting the model to them.
-        :param X: list of smiles strings
-        :param y: None
-        :return: None
+        This function checks whether the smiles strings are stored in the class. Then it checks that X is a list of
+        indices specifying which data samples to use. Then, it returns the appropriate smiles strings hot
+        encoded.
+
+        :param X: either list of smiles strings or indices.
+        :type X: either list of strings or list of ints
+        :return: smiles strings hot encoded and the following character
+        :rtype: numpy arrays of shape (n_samples, max_length, n_unique characters) and (n_samples, max_length, n_unique_characters)
         """
+
         if not isinstance(self.smiles, type(None)):
             if not is_positive_integer_or_zero_array(X):
                 raise InputError("The indices need to be positive or zero integers.")
@@ -468,51 +555,22 @@ class Model_2(BaseEstimator):
         else:
             X_hot, y_hot = self._hot_encode(X)
 
-        self.n_samples = X_hot.shape[0]
-        self.max_size = X_hot.shape[1]
-        self.n_feat = X_hot.shape[2]
+        return X_hot, y_hot
 
-        if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
-            self._generate_model()
-
-            if self.tensorboard == True:
-                tensorboard = TensorBoard(log_dir='./tb/model_1',
-                                          write_graph=True, write_images=False)
-                callbacks_list = [tensorboard]
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs, callbacks=callbacks_list)
-            else:
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
-        elif not isinstance(self.model, type(None)):
-            if self.tensorboard == True:
-                tensorboard = TensorBoard(log_dir='./tb/model_1',
-                                          write_graph=True, write_images=False)
-                callbacks_list = [tensorboard]
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                               callbacks=callbacks_list)
-            else:
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
-        elif not isinstance(self.loaded_model, type(None)):
-            if self.tensorboard == True:
-                tensorboard = TensorBoard(log_dir='./tb/model_1',
-                                          write_graph=True, write_images=False)
-                callbacks_list = [tensorboard]
-                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                                      callbacks=callbacks_list)
-            else:
-                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
-        else:
-            raise InputError("No model has been fit already or has been loaded.")
-
-    def predict(self, X=None, frag_length=5):
+    def _initialise_data_predict(self, X, frag_length):
         """
-        This function predicts new strings starting from a G or from a fragment. It carries on predicting until the 
-        character 'E' is output or until the string has reached the maximum length present in the training set.
-        
-        :param X: one or more smile strings or None
-        :type: list of strings
-        :param frag_length: The length of the fragment to use for prediction
-        :return: predictions
-        :rtype: list of strings
+        X can either be a list of smiles strings or the indices to the samples to be used for prediction. In the latter
+        case, the data needs to have been stored inside the class.
+
+        This function takes the smiles strings and extract the first few characters (number specified by the parameter
+        frag_length). Prediction will start from these few characters.
+
+        :param X: list of smiles or list of indices
+        :type X: list of strings or list of ints
+        :param frag_length: number of characters of each smiles strings to use for prediction
+        :type frag_length: int
+        :return: list of the first fragment of each smile string specified and its one-hot encoded version.
+        :rtype: list of strings, numpy array of shape (n_samples, frag_length, n_unique_char)
         """
 
         if isinstance(X, type(None)):
@@ -528,123 +586,7 @@ class Model_2(BaseEstimator):
             X_hot, y_hot = self._hot_encode(X)
             X_strings = X
 
-        if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
-            raise Exception("The model has not been fit and no saved model has been loaded.\n")
-
-        elif isinstance(self.model, type(None)):
-            predictions = self._predict(X_strings, X_hot, self.loaded_model)
-
-        else:
-            predictions = self._predict(X_strings, X_hot, self.model)
-
-        return predictions
-
-    def save(self, dir='./saved_models/'):
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        filename = dir + "model_2.h5"
-        self.model.save(filename)
-        print("Saved model in directory: " + dir + "\n")
-
-    def load(self, filename):
-        """
-        This function loads a model that has been previously saved.
-        :param filename: string 
-        :return: None
-        """
-
-        self.loaded_model = load_model(filename)
-
-    def score(self, X=None, y=None):
-        """
-        This function takes in smiles strings and scores the model on the predictions.
-
-        :param X: smiles strings or nothing
-        :type X: list of strings
-        :param y: None
-        :return: score
-        :rtype: float
-        """
-
-        predictions = self.predict(X)
-
-        n_valid_smiles = 0
-
-        for smile_string in predictions:
-            try:
-                mol = Chem.MolFromSmiles(smile_string)
-                if not isinstance(mol, type(None)):
-                    n_valid_smiles += 1
-            except Exception:
-                pass
-
-        score = n_valid_smiles/len(predictions)
-
-        return score
-
-    def score_similarity(self, X_1, X_2):
-        """
-        This function calculates the average Tanimoto similarity between each molecule in X_1 and those in X_2. It
-        returns all the average Tanimoto coefficients and the percentage of duplicates.
-
-        :param X_1: list of smiles strings to compare
-        :param X_2: list of smiles strings acting as reference
-        :return: Tanimoto coefficients and the percentage of duplicates
-        :rtype: list of floats, float
-        """
-
-        # Making the smiles strings in rdkit molecules
-        mol_1, invalid_1 = self._make_rdkit_mol(X_1)
-        mol_2, invalid_2 = self._make_rdkit_mol(X_2)
-
-        # Turning the molecules in Daylight fingerprints
-        fps_1 = [FingerprintMols.FingerprintMol(x) for x in mol_1]
-        fps_2 = [FingerprintMols.FingerprintMol(x) for x in mol_2]
-
-        # Obtaining similarity measure
-        tanimoto_coeff = []
-        n_duplicates = 0
-
-        for i in range(len(fps_1)):
-            sum_tanimoto = 0
-            for j in range(len(fps_2)):
-                coeff = DataStructs.FingerprintSimilarity(fps_1[i], fps_2[j])
-                sum_tanimoto += coeff
-                if coeff == 1:
-                    n_duplicates += 1
-
-            avg_tanimoto = sum_tanimoto / len(fps_2)
-            tanimoto_coeff.append(avg_tanimoto)
-
-        if len(fps_1) != 0:
-            percent_duplicates = n_duplicates/len(fps_1)
-        else:
-            percent_duplicates = 1
-
-        return tanimoto_coeff, percent_duplicates
-
-    def _make_rdkit_mol(self, X):
-        """
-        This function takes a list of smiles strings and returns a list of rdkit objects for the valid smiles strings.
-
-        :param X: list of smiles
-        :return: list of rdkit objects
-        """
-
-        mol = []
-        invalid = 0
-
-        for smile in X:
-            try:
-                molecule = Chem.MolFromSmiles(smile)
-                if not isinstance(molecule, type(None)):
-                    mol.append(molecule)
-                else:
-                    invalid += 1
-            except Exception:
-                pass
-
-        return mol, invalid
+        return X_strings, X_hot
 
     def _hot_encode(self, X):
         """
