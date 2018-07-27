@@ -1,4 +1,3 @@
-from sklearn.base import BaseEstimator
 from keras import Sequential
 from keras.layers import LSTM
 from keras.layers import Dense
@@ -12,6 +11,7 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem.Fingerprints import FingerprintMols
 from rdkit import DataStructs
+from sklearn.base import BaseEstimator
 from utils import is_positive_integer_or_zero_array, InputError
 
 class _Model(BaseEstimator):
@@ -21,6 +21,26 @@ class _Model(BaseEstimator):
 
     def __init__(self, tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
                  batch_size, nb_epochs, smiles):
+        """
+        This function initialises the parent class common to both Model 1 and 2.
+
+        :param tensorboard: whether to log progress to tensorboard or not
+        :type tensorboard: bool
+        :param hidden_neurons_1: number of hidden units in the first LSTM
+        :type hidden_neurons_1: int
+        :param hidden_neurons_2: number of hidden units in the second LSTM
+        :type hidden_neurons_2: int
+        :param dropout_1: dropout rate in the first LSTM
+        :type dropout_1: float
+        :param dropout_2:  dropout rate in the 2nd LSTM
+        :type dropout_2: float
+        :param batch_size: Size of the data set batches to use during training
+        :type batch_size: int
+        :param nb_epochs: number of iterations of training
+        :type nb_epochs: int
+        :param smiles: list of smiles strings from which to learn
+        :type smiles: list of strings
+        """
 
         self.tensorboard = tensorboard
         self.hidden_neurons_1 = hidden_neurons_1
@@ -85,7 +105,7 @@ class _Model(BaseEstimator):
         else:
             raise InputError("No model has been fit already or has been loaded.")
 
-    def predict(self, X, frag_length=5):
+    def predict(self, X=None, frag_length=5):
 
         X_strings, X_hot = self._initialise_data_predict(X, frag_length)
 
@@ -213,7 +233,6 @@ class _Model(BaseEstimator):
                 pass
 
         return mol, invalid
-
 
 class Model_1(_Model):
     """
