@@ -1,5 +1,3 @@
-import sys
-sys.path.append('/Volumes/Transcend/repositories/NovaData/models/')
 import sklearn_models
 import time
 

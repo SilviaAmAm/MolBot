@@ -24,5 +24,5 @@ estimator.fit(list(range(100)))
 
 estimator.save()
 
-estimator.load("./saved_models/model_1.h5")
+estimator.load("model.h5")
 estimator.fit(list(range(100)))
