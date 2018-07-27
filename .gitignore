@@ -7,3 +7,5 @@ notebooks/
 *.pickle
 *.db
 examples/osprey/sklearn_models.py
+docs/build/
+docs/source/examples/.ipynb_checkpoints/
