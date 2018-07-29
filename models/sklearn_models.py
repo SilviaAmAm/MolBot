@@ -12,7 +12,7 @@ from rdkit import Chem
 from rdkit.Chem.Fingerprints import FingerprintMols
 from rdkit import DataStructs
 from sklearn.base import BaseEstimator
-from utils import is_positive_integer_or_zero_array, InputError
+import utils
 
 class _Model(BaseEstimator):
     """
@@ -42,33 +42,101 @@ class _Model(BaseEstimator):
         :type smiles: list of strings
         """
 
-        self.tensorboard = tensorboard
-        self.hidden_neurons_1 = hidden_neurons_1
-        self.hidden_neurons_2 = hidden_neurons_2
-        self.dropout_1 = dropout_1
-        self.dropout_2 = dropout_2
-        self.batch_size = batch_size
-        self.nb_epochs = nb_epochs
+        self.tensorboard = self._set_tensorboard(tensorboard)
+        self.hidden_neurons_1 = self._set_hidden_neurons(hidden_neurons_1)
+        self.hidden_neurons_2 = self._set_hidden_neurons(hidden_neurons_2)
+        self.dropout_1 = self._set_dropout(dropout_1)
+        self.dropout_2 = self._set_dropout(dropout_2)
+        self.batch_size = self._set_provisional_batch_size(batch_size)
+        self.nb_epochs = self._set_epochs(nb_epochs)
 
         self.model = None
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
-        self.smiles = smiles
+        self.smiles = self._check_smiles(smiles)
+
+    def _set_tensorboard(self, tb):
+
+        if utils.is_bool(tb):
+            return tb
+        else:
+            raise utils.InputError("Parameter Tensorboard should be either true or false. Got %s" % (str(tb)))
+
+    def _set_hidden_neurons(self, h):
+        if utils.is_positive_integer(h):
+            return h
+        else:
+            raise utils.InputError("The number of hidden neurons should be a positive non zero integer. Got %s." % (str(h)))
+
+    def _set_dropout(self, drop):
+        if drop > 0 and drop < 1:
+            return drop
+        else:
+            raise utils.InputError(
+                "The dropout rate should be between 0 and 1. Got %s." % (str(drop)))
+
+    def _set_provisional_batch_size(self, batch_size):
+        if batch_size != "auto":
+            if not utils.is_positive_integer(batch_size):
+                raise utils.InputError("Expected 'batch_size' to be a positive integer. Got %s" % str(batch_size))
+            elif batch_size == 1:
+                raise utils.InputError("batch_size must be larger than 1.")
+            return int(batch_size)
+        else:
+            return batch_size
+
+    def _set_batch_size(self):
+
+        if self.batch_size == 'auto':
+            batch_size = min(100, self.n_samples)
+        else:
+            if self.batch_size > self.n_samples:
+                print("Warning: batch_size larger than sample size. It is going to be clipped")
+                return self.n_samples
+            else:
+                batch_size = self.batch_size
+
+        better_batch_size = utils.ceil(self.n_samples, utils.ceil(self.n_samples, batch_size))
+
+        return better_batch_size
+
+    def _set_epochs(self, epochs):
+        if utils.is_positive_integer(epochs):
+            return epochs
+        else:
+            raise utils.InputError("The number of epochs should be a positive integer. Got %s." % (str(epochs)))
+
+    def _check_smiles(self, smiles):
+        if utils.is_array_like(smiles):
+            are_strings = True
+            for item in smiles:
+                if not isinstance(item, str):
+                    are_strings = False
+
+            if are_strings:
+                return smiles
+            else:
+                raise utils.InputError("Smiles should be a list of string.")
+        else:
+            raise utils.InputError("Smiles should be a list of string.")
 
     def fit(self, X):
         """
         This function fits the parameters of a GRNN to the data provided.
+
         :param X: list of smiles or list of indices of the smiles to use
         :type X: list of strings or list of ints
         :return: None
         """
 
-        X_hot, y_hot = self._initialise_data_fit(X)
+        X_hot, y_hot = self._initialise_data_fit(self._check_smiles(X))
 
         self.n_samples = X_hot.shape[0]
         self.max_size = X_hot.shape[1]
         self.n_feat = X_hot.shape[2]
+
+        batch_size = self._set_batch_size()
 
         if isinstance(self.model, type(None)) and isinstance(self.loaded_model, type(None)):
             self._generate_model()
@@ -77,10 +145,10 @@ class _Model(BaseEstimator):
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.model.fit(X_hot, y_hot, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
                                callbacks=callbacks_list)
             else:
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
+                self.model.fit(X_hot, y_hot, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs)
 
         elif not isinstance(self.model, type(None)):
             if self.tensorboard == True:
@@ -106,6 +174,18 @@ class _Model(BaseEstimator):
             raise InputError("No model has been fit already or has been loaded.")
 
     def predict(self, X=None, frag_length=5):
+        """
+        This function predicts some smiles from either nothing or from fragments of smiles strings.
+        :param X: list of smiles strings or nothing
+        :type X: list of str
+        :param frag_length: length of smiles string fragment to use.
+        :type frag_length: int
+        :return: list of smiles string
+        :rtype: list of str
+        """
+
+        if not isinstance(X, type(None)):
+            X = self._check_smiles(X)
 
         X_strings, X_hot = self._initialise_data_predict(X, frag_length)
 
@@ -159,8 +239,8 @@ class _Model(BaseEstimator):
         """
 
         # Making the smiles strings in rdkit molecules
-        mol_1, invalid_1 = self._make_rdkit_mol(X_1)
-        mol_2, invalid_2 = self._make_rdkit_mol(X_2)
+        mol_1, invalid_1 = self._make_rdkit_mol(self._check_smiles(X_1))
+        mol_2, invalid_2 = self._make_rdkit_mol(self._check_smiles(X_2))
 
         # Turning the molecules in Daylight fingerprints
         fps_1 = [FingerprintMols.FingerprintMol(x) for x in mol_1]
@@ -205,6 +285,7 @@ class _Model(BaseEstimator):
     def load(self, filename='model.h5'):
         """
         This function loads a model that has been previously saved.
+
         :param filename: Name of the file in which the model has been previously saved.
         :return: None
         """
@@ -218,6 +299,8 @@ class _Model(BaseEstimator):
         :param X: list of smiles
         :return: list of rdkit objects
         """
+
+        X = self._check_smiles(X)
 
         mol = []
         invalid = 0
@@ -242,7 +325,7 @@ class Model_1(_Model):
     When presented with a new smiles fragment it predicts the most likely next character."""
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size=500, nb_epochs=4, window_length=10, smiles=None):
+                 batch_size="auto", nb_epochs=4, window_length=10, smiles=None):
         """
         This function uses the initialiser of the parent class and initialises the window length.
 
@@ -290,7 +373,7 @@ class Model_1(_Model):
             if not is_positive_integer_or_zero_array(X):
                 raise InputError("The indices need to be positive or zero integers.")
 
-            window_idx = self.idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
+            window_idx = self._idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
             y_hot = np.asarray([self.y_hot[i] for i in window_idx])
         else:
@@ -317,7 +400,7 @@ class Model_1(_Model):
 
         if not isinstance(self.smiles, type(None)):
             X_strings = [self.smiles[int(i)] for i in X]
-            window_idx = self.idx_to_window_idx(X)
+            window_idx = self._idx_to_window_idx(X)
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
         else:
             X_strings = X
@@ -493,9 +576,10 @@ class Model_1(_Model):
 
         return all_predictions
 
-    def idx_to_window_idx(self, idx):
+    def _idx_to_window_idx(self, idx):
         """
         This function takes the indices of the smiles strings and returns the indices of the corresponding windows.
+
         :param idx: list of ints
         :return:  list of ints
         """
