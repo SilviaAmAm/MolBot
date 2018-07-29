@@ -54,7 +54,10 @@ class _Model(BaseEstimator):
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
-        self.smiles = self._check_smiles(smiles)
+        if not isinstance(smiles, type(None)):
+            self.smiles = self._check_smiles(smiles)
+        else:
+            self.smiles = None
 
     def _set_tensorboard(self, tb):
 
@@ -109,15 +112,11 @@ class _Model(BaseEstimator):
 
     def _check_smiles(self, smiles):
         if utils.is_array_like(smiles):
-            are_strings = True
             for item in smiles:
                 if not isinstance(item, str):
-                    are_strings = False
+                    raise utils.InputError("Smiles should be a list of string.")
 
-            if are_strings:
-                return smiles
-            else:
-                raise utils.InputError("Smiles should be a list of string.")
+            return smiles
         else:
             raise utils.InputError("Smiles should be a list of string.")
 
@@ -130,7 +129,7 @@ class _Model(BaseEstimator):
         :return: None
         """
 
-        X_hot, y_hot = self._initialise_data_fit(self._check_smiles(X))
+        X_hot, y_hot = self._initialise_data_fit(X)
 
         self.n_samples = X_hot.shape[0]
         self.max_size = X_hot.shape[1]
@@ -171,7 +170,7 @@ class _Model(BaseEstimator):
                 self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
 
         else:
-            raise InputError("No model has been fit already or has been loaded.")
+            raise utils.InputError("No model has been fit already or has been loaded.")
 
     def predict(self, X=None, frag_length=5):
         """
@@ -183,9 +182,6 @@ class _Model(BaseEstimator):
         :return: list of smiles string
         :rtype: list of str
         """
-
-        if not isinstance(X, type(None)):
-            X = self._check_smiles(X)
 
         X_strings, X_hot = self._initialise_data_predict(X, frag_length)
 
@@ -280,7 +276,7 @@ class _Model(BaseEstimator):
         elif not isinstance(self.loaded_model, type(None)):
             self.loaded_model.save(filename, overwrite=False)
         else:
-            raise InputError("No model to be saved.")
+            raise utils.InputError("No model to be saved.")
 
     def load(self, filename='model.h5'):
         """
@@ -370,14 +366,14 @@ class Model_1(_Model):
         """
 
         if not isinstance(self.smiles, type(None)):
-            if not is_positive_integer_or_zero_array(X):
-                raise InputError("The indices need to be positive or zero integers.")
+            if not utils.is_positive_integer_or_zero_array(X):
+                raise utils.InputError("The indices need to be positive or zero integers.")
 
             window_idx = self._idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
             y_hot = np.asarray([self.y_hot[i] for i in window_idx])
         else:
-            X_strings = X
+            X_strings = self._check_smiles(X)
             X_hot, y_hot = self._hot_encode(X_strings)
 
         return X_hot, y_hot
@@ -650,13 +646,13 @@ class Model_2(_Model):
         """
 
         if not isinstance(self.smiles, type(None)):
-            if not is_positive_integer_or_zero_array(X):
-                raise InputError("The indices need to be positive or zero integers.")
+            if not utils.is_positive_integer_or_zero_array(X):
+                raise utils.InputError("The indices need to be positive or zero integers.")
 
             X_hot = np.asarray([self.X_hot[i] for i in X])
             y_hot = np.asarray([self.y_hot[i] for i in X])
         else:
-            X_hot, y_hot = self._hot_encode(X)
+            X_hot, y_hot = self._hot_encode(self._check_smiles(X))
 
         return X_hot, y_hot
 
