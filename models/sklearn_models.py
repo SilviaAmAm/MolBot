@@ -8,6 +8,7 @@ from keras.layers import Lambda
 from keras.models import load_model
 import os
 import numpy as np
+import re
 from rdkit import Chem
 from rdkit.Chem.Fingerprints import FingerprintMols
 from rdkit import DataStructs
@@ -196,7 +197,7 @@ class _Model(BaseEstimator):
 
         return predictions
 
-    def score(self, X):
+    def score(self, X=None):
         """
         This function takes in smiles strings and scores the model on the predictions. The score is the percentage of
          valid smiles strings that have been predicted.
@@ -348,6 +349,7 @@ class Model_1(_Model):
         super(Model_1, self).__init__(tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
                  batch_size, nb_epochs, smiles)
 
+        # TODO make check for window length
         self.window_length = window_length
 
         if not isinstance(self.smiles, type(None)):
@@ -393,8 +395,12 @@ class Model_1(_Model):
         :rtype: list of strings, numpy array of shape (n_samples, n_window_length, n_unique_char)
         """
 
+        if isinstance(X, type(None)):
+            raise utils.InputError("Model_1 can only predict from fragments of length %i. No smiles given." % (self.window_length))
 
         if not isinstance(self.smiles, type(None)):
+            if not utils.is_positive_integer_or_zero_array(X):
+                raise utils.InputError("Indices should be passed to the predict function as smiles strings are already stored in the class.")
             X_strings = [self.smiles[int(i)] for i in X]
             window_idx = self._idx_to_window_idx(X)
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
@@ -467,6 +473,7 @@ class Model_1(_Model):
 
             n_possible_char = len(self.idx_to_char)
 
+        self.smiles = new_molecules
 
         # Splitting X into window lengths and y into the characters after each window
         window_X = []
@@ -563,6 +570,8 @@ class Model_1(_Model):
                 if len(y_pred) == 100:
                     break
 
+            if y_pred[0] == 'G':
+                y_pred = y_pred[1:]
             if y_pred[-1] == 'E':
                 y_pred = y_pred[:-1]
 
@@ -672,15 +681,18 @@ class Model_2(_Model):
         :rtype: list of strings, numpy array of shape (n_samples, frag_length, n_unique_char)
         """
 
+        # Predictions will start from a 'G'
         if isinstance(X, type(None)):
             X_hot = None
             X_strings = None
+        # Predictions will start from a fragment of smiles strings stored in the class
         elif not isinstance(self.smiles, type(None)):
-            if not is_positive_integer_or_zero_array(X):
-                raise InputError("The indices need to be positive or zero integers.")
+            if not utils.is_positive_integer_or_zero_array(X):
+                raise utils.InputError("The indices need to be positive or zero integers.")
 
             X_hot = np.asarray([self.X_hot[i][:frag_length] for i in X])
             X_strings = np.asarray([self.smiles[i][:frag_length] for i in X])
+        # Predictions will start from fragments of smiles strings passed through the argument
         else:
             X_hot, y_hot = self._hot_encode(X)
             X_strings = X
@@ -822,7 +834,9 @@ class Model_2(_Model):
             if y_pred[0] == 'G':
                 y_pred = y_pred[1:]
 
-            return y_pred
+            y_pred = re.sub("A", "", y_pred)
+
+            return [y_pred]
                     
         else:
             n_samples = len(X_hot)
@@ -847,6 +861,7 @@ class Model_2(_Model):
 
                 if y_pred[-1] == 'E':
                     y_pred = y_pred[:-1]
+                y_pred = re.sub("A", "", y_pred)
                 all_predictions.append(y_pred)
 
             return all_predictions
