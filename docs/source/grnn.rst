@@ -1,9 +1,7 @@
 Python API documentation
 ========================
 
-.. automodule:: models.sklearn_models
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. automodule:: sklearn_models
+    :inherited-members:
 
 

@@ -9,3 +9,10 @@ notebooks/
 examples/osprey/sklearn_models.py
 docs/build/
 docs/source/examples/.ipynb_checkpoints/
+examples/osprey/utils.py
+examples/osprey/sklearn_models.py
+examples/sklearn_models.py
+examples/utils.py
+examples/osprey/idx.csv
+tests/utils.py
+tests/sklearn_models.py

@@ -20,6 +20,7 @@ https://github.com/SilviaAmAm/NovaData
    :name: index
 
    installation
+   examples/principles
    examples/examples
 
 .. toctree::
