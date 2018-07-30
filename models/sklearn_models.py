@@ -405,8 +405,12 @@ class Model_1(_Model):
             window_idx = self._idx_to_window_idx(X)
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
         else:
-            X_strings = X
-            X_hot, _ = self._hot_encode(X_strings)
+            self._check_smiles(X)
+            X_hot, _ = self._hot_encode(X)
+            # Adding G and E at the ends since the hot version has it:
+            X_strings = []
+            for item in X:
+                X_strings.append("G" + item + "E")
 
         return X_strings, X_hot
 
@@ -473,7 +477,8 @@ class Model_1(_Model):
 
             n_possible_char = len(self.idx_to_char)
 
-        self.smiles = new_molecules
+        if not isinstance(self.smiles, type(None)):
+            self.smiles = new_molecules
 
         # Splitting X into window lengths and y into the characters after each window
         window_X = []
@@ -577,7 +582,8 @@ class Model_1(_Model):
 
             all_predictions.append(y_pred)
 
-            n_windows = len(X_strings[i]) - self.window_length + 2
+            # This is the index of the next 'first window' in X_hot
+            n_windows = len(X_strings[i]) - self.window_length
 
         return all_predictions
 
