@@ -687,6 +687,7 @@ class Model_2(_Model):
         :rtype: list of strings, numpy array of shape (n_samples, frag_length, n_unique_char)
         """
 
+        # TODO add a check that the frag_length is < than the shortest smile
         # Predictions will start from a 'G'
         if isinstance(X, type(None)):
             X_hot = None
@@ -700,8 +701,10 @@ class Model_2(_Model):
             X_strings = np.asarray([self.smiles[i][:frag_length] for i in X])
         # Predictions will start from fragments of smiles strings passed through the argument
         else:
-            X_hot, y_hot = self._hot_encode(X)
-            X_strings = X
+            X = self._check_smiles(X)
+            X_strings = [item[:frag_length] for item in X]  # No 'G' is added because it is done in the Hot encode function
+            X_hot, y_hot = self._hot_encode(X_strings)
+            X_strings = ["G" + item[:frag_length] for item in X] # Now the G is needed since the hot encoded fragments will have it
 
         return X_strings, X_hot
 
@@ -787,6 +790,9 @@ class Model_2(_Model):
                     input_sequence[j][sample_idx[j]] = 1.0
                 X_hot.append(input_sequence)
 
+        if not isinstance(self.smiles, type(None)):
+            self.smiles = new_molecules
+
         return X_hot, y_hot
 
     def _generate_model(self):
@@ -850,23 +856,30 @@ class Model_2(_Model):
             all_predictions = []
 
             for n in range(0, n_samples):
-                X_pred = X_hot[n]  # shape (fragment_length, n_feat)
+                X_frag = X_hot[n]  # shape (fragment_length, n_feat)
                 y_pred = X_strings[n]
 
                 while y_pred[-1] != 'E':
-                    X_pred = np.reshape(X_pred, (1, X_pred.shape[0], X_pred.shape[1]))  # shape (1, fragment_length, n_feat)
+                    X_pred = np.reshape(X_frag, (1, X_frag.shape[0], X_frag.shape[1]))  # shape (1, fragment_length, n_feat)
 
                     out = model.predict(X_pred)[0][-1]
                     idx_out = np.argmax(out)
 
                     y_pred += self.idx_to_char[idx_out]
-                    X_pred = self._hot_encode([y_pred[1:]])[0][0]
+                    # X_pred = self._hot_encode([y_pred[1:]])[0][0]
+
+                    X_pred_temp = np.zeros((X_frag.shape[0]+1, X_frag.shape[1]))
+                    X_pred_temp[:-1] = X_frag
+                    X_pred_temp[-1][idx_out] = 1
+                    X_frag = X_pred_temp
 
                     if len(y_pred) == 100:
                         break
 
                 if y_pred[-1] == 'E':
                     y_pred = y_pred[:-1]
+                if y_pred[0] == 'G':
+                    y_pred = y_pred[1:]
                 y_pred = re.sub("A", "", y_pred)
                 all_predictions.append(y_pred)
 
