@@ -9,6 +9,7 @@ from keras.models import load_model
 import os
 import numpy as np
 import re
+import pickle
 from sklearn.base import BaseEstimator
 import utils
 
@@ -289,6 +290,8 @@ class _Model(BaseEstimator):
         else:
             raise utils.InputError("No model to be saved.")
 
+        pickle.dump([self.char_to_idx, self.idx_to_char], open( "idx_dict.pickle", "wb" ))
+
     def load(self, filename='model.h5'):
         """
         This function loads a model that has been previously saved.
@@ -298,6 +301,10 @@ class _Model(BaseEstimator):
         """
 
         self.loaded_model = load_model(filename)
+
+        idx_dixt = pickle.load(open("idx_dict.pickle", "rb"))
+        self.char_to_idx = idx_dixt[0]
+        self.idx_to_char = idx_dixt[1]
 
     def _make_rdkit_mol(self, X):
         """
