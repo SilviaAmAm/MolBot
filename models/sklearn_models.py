@@ -9,9 +9,6 @@ from keras.models import load_model
 import os
 import numpy as np
 import re
-from rdkit import Chem
-from rdkit.Chem.Fingerprints import FingerprintMols
-from rdkit import DataStructs
 from sklearn.base import BaseEstimator
 import utils
 
@@ -176,6 +173,7 @@ class _Model(BaseEstimator):
     def predict(self, X=None, frag_length=5):
         """
         This function predicts some smiles from either nothing or from fragments of smiles strings.
+
         :param X: list of smiles strings or nothing
         :type X: list of str
         :param frag_length: length of smiles string fragment to use.
@@ -208,6 +206,11 @@ class _Model(BaseEstimator):
         :rtype: float
         """
 
+        try:
+            from rdkit import Chem
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("RDKit is required for scoring.")
+
         predictions = self.predict(X)
 
         n_valid_smiles = 0
@@ -234,6 +237,13 @@ class _Model(BaseEstimator):
         :return: Tanimoto coefficients and the percentage of duplicates
         :rtype: list of floats, float
         """
+
+        try:
+            from rdkit import Chem
+            from rdkit.Chem.Fingerprints import FingerprintMols
+            from rdkit import DataStructs
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("RDKit is required for scoring the similarity.")
 
         # Making the smiles strings in rdkit molecules
         mol_1, invalid_1 = self._make_rdkit_mol(self._check_smiles(X_1))
