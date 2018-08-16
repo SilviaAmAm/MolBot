@@ -53,6 +53,7 @@ class _Model(BaseEstimator):
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
+        self.n_feat = None
         if not isinstance(smiles, type(None)):
             self.smiles = self._check_smiles(smiles)
         else:
@@ -119,6 +120,27 @@ class _Model(BaseEstimator):
         else:
             raise utils.InputError("Smiles should be a list of string.")
 
+    def _modify_model_for_predictions(self, model, temperature):
+        """
+        This function modifies the model for predict time by adding a temperature factor to the softmax activation
+        function.
+
+        :param model: the model to modify
+        :type model: keras model
+        :param temperature: temperature that modifies the softmax
+        :type temperature: float > 0 and <= 1
+        :return: None
+        """
+        model.summary()
+        model.pop()
+        model.pop()
+        model.summary()
+        model.add(Lambda(lambda x: x / temperature))
+        model.add(Activation('softmax'))
+        model.summary()
+
+        return model
+
     def fit(self, X):
         """
         This function fits the parameters of a GRNN to the data provided.
@@ -171,7 +193,7 @@ class _Model(BaseEstimator):
         else:
             raise utils.InputError("No model has been fit already or has been loaded.")
 
-    def predict(self, X=None, frag_length=5):
+    def predict(self, X=None, frag_length=5, temperature=1.0, max_length=100):
         """
         This function predicts some smiles from either nothing or from fragments of smiles strings.
 
@@ -179,9 +201,17 @@ class _Model(BaseEstimator):
         :type X: list of str
         :param frag_length: length of smiles string fragment to use.
         :type frag_length: int
+        :param temperature: factor that modifies the softmax function at predict time.
+        :type temperature: float > 0 and <= 1
+        :param max_length: Maximum length of the strings to be predicted.
+        :type max_length: int larger than 0
         :return: list of smiles string
         :rtype: list of str
         """
+        if temperature <= 0 or temperature > 1.0:
+            raise utils.InputError("Temperature parameter should be > 0.0 and <= 1.0. Got %s" % (str(temperature)))
+        if not isinstance(max_length, type(int)) and max_length <= 0:
+            raise utils.InputError("The length of the predicted strings should be an integer larger than 0.")
 
         X_strings, X_hot = self._initialise_data_predict(X, frag_length)
 
@@ -189,10 +219,10 @@ class _Model(BaseEstimator):
             raise Exception("The model has not been fit and no saved model has been loaded.\n")
 
         elif isinstance(self.model, type(None)):
-            predictions = self._predict(X_strings, X_hot, self.loaded_model)
+            predictions = self._predict(X_strings, X_hot, self.loaded_model, temperature, max_length)
 
         else:
-            predictions = self._predict(X_strings, X_hot, self.model)
+            predictions = self._predict(X_strings, X_hot, self.model, temperature, max_length)
 
         return predictions
 
@@ -550,7 +580,7 @@ class Model_1(_Model):
 
         return cold_X
 
-    def _predict(self, X_strings, X_hot, model):
+    def _predict(self, X_strings, X_hot, model, temperature, max_length):
         """
         This function takes in a list of smiles strings. Then, it takes the first window from each smiles and predicts
         a full smiles string starting from that window.
@@ -558,9 +588,14 @@ class Model_1(_Model):
         :param X: smiles strings
         :type: list of smiles strings
         :param model: the keras model
+        :param temperature: the parameter that changes the softmax
+        :param max_length: Maximum length of the strings to be predicted.
+        :type max_length: int larger than 0
         :return: predictions
         :rtype: list of strings
         """
+
+        model = self._modify_model_for_predictions(model, temperature)
 
         n_samples = len(X_strings)
 
@@ -589,7 +624,7 @@ class Model_1(_Model):
 
                 X_pred_temp[:, -1, :] = y_pred_hot
 
-                if len(y_pred) == 100:
+                if len(y_pred) == max_length:
                     break
 
             if y_pred[0] == 'G':
@@ -832,8 +867,8 @@ class Model_2(_Model):
         model.compile(loss="categorical_crossentropy", optimizer="rmsprop")
 
         self.model = model
-        
-    def _predict(self, X_strings, X_hot, model):
+
+    def _predict(self, X_strings, X_hot, model, temperature, max_length):
         """
         This function either takes in  smiles strings fragments and their hot encoded version, or it takes in nothing
         and generates smiles strings from scratch.
@@ -841,15 +876,23 @@ class Model_2(_Model):
         :param X_strings: Fragment of smiles string or None
         :param X_hot: Hot encoded version of X
         :param model: the model to be used (either the current model or a loaded model)
+        :param temperature: the parameter that changes the softmax
+        :param max_length: Maximum length of the strings to be predicted.
+        :type max_length: int larger than 0
         :return: predictions of smiles strings
         """
+
+        if utils.is_none(self.n_feat):
+            self.n_feat = len(self.idx_to_char)
+
+        model = self._modify_model_for_predictions(model, temperature)
         
         if isinstance(X_hot, type(None)):
-            X_pred = np.zeros((1, self.max_size, self.n_feat))
+            X_pred = np.zeros((1, max_length, self.n_feat))
             y_pred = 'G'
             X_pred[0, 0, self.char_to_idx['G']] = 1
 
-            for i in range(self.max_size - 1):
+            for i in range(max_length - 1):
                 out = model.predict(X_pred[:, :i + 1, :])[0][-1]
                 idx_out = np.argmax(out)
                 X_pred[0, i + 1, idx_out] = 1
