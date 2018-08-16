@@ -129,15 +129,13 @@ class _Model(BaseEstimator):
         :type model: keras model
         :param temperature: temperature that modifies the softmax
         :type temperature: float > 0 and <= 1
-        :return: None
+        :return: The modified model
         """
-        model.summary()
+
         model.pop()
         model.pop()
-        model.summary()
         model.add(Lambda(lambda x: x / temperature))
         model.add(Activation('softmax'))
-        model.summary()
 
         return model
 
