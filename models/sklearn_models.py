@@ -514,8 +514,8 @@ class Model_1(_Model):
         n_samples = len(window_X)
         n_features = n_possible_char
 
-        X_hot = np.zeros((n_samples, self.window_length, n_features))
-        y_hot = np.zeros((n_samples, n_features))
+        X_hot = np.zeros((n_samples, self.window_length, n_features), dtype=np.int32)
+        y_hot = np.zeros((n_samples, n_features), dtype=np.int32)
 
         for n in range(n_samples):
             sample_x = window_X[n]
@@ -768,8 +768,8 @@ class Model_2(_Model):
 
             n_samples = int(len(new_molecules))
 
-            X_hot = np.zeros((n_samples, max_size, n_feat))
-            y_hot = np.zeros((n_samples, max_size, n_feat))
+            X_hot = np.zeros((n_samples, max_size, n_feat), dtype=np.int32)
+            y_hot = np.zeros((n_samples, max_size, n_feat), dtype=np.int32)
 
             for n in range(n_samples):
                 sample = new_molecules[n]
