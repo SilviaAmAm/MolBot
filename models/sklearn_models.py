@@ -206,8 +206,8 @@ class _Model(BaseEstimator):
         :return: list of smiles string
         :rtype: list of str
         """
-        if temperature <= 0 or temperature > 1.0:
-            raise utils.InputError("Temperature parameter should be > 0.0 and <= 1.0. Got %s" % (str(temperature)))
+        if temperature <= 0:
+            raise utils.InputError("Temperature parameter should be > 0.0. Got %s" % (str(temperature)))
         if not isinstance(max_length, type(int)) and max_length <= 0:
             raise utils.InputError("The length of the predicted strings should be an integer larger than 0.")
 
