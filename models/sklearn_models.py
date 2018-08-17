@@ -8,6 +8,7 @@ from keras.callbacks import TensorBoard
 from keras.layers import Lambda
 from keras.models import load_model
 import os
+import random
 import numpy as np
 import re
 import pickle
@@ -926,14 +927,19 @@ class Model_2(_Model):
         model = self._modify_model_for_predictions(model, temperature)
         
         if isinstance(X_hot, type(None)):
+            # The first character is G
             X_pred = np.zeros((1, max_length, self.n_feat))
             y_pred = 'G'
             X_pred[0, 0, self.char_to_idx['G']] = 1
 
-            for i in range(max_length - 1):
-                out = model.predict(X_pred[:, :i + 1, :])[0][-1]
-                idx_out = np.argmax(out)
-                X_pred[0, i + 1, idx_out] = 1
+            for i in range(1, max_length):
+                if i == 1:
+                    out = model.predict(X_pred[:, :i, :])[0][-1]
+                    idx_out = np.random.choice(np.arange(self.n_feat), p=out)
+                else:
+                    out = model.predict(X_pred[:, :i, :])[0][-1]
+                    idx_out = np.argmax(out)
+                X_pred[0, i, idx_out] = 1
                 if self.idx_to_char[idx_out] == 'E':
                     break
                 else:
