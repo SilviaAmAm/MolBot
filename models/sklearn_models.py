@@ -438,6 +438,9 @@ class Model_1(_Model):
             if not utils.is_positive_integer_or_zero_array(X):
                 raise utils.InputError("The indices need to be positive or zero integers.")
 
+            # This line is just so that the indices are ints of the right shape for Osprey
+            X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0],))
+
             window_idx = self._idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
             y_hot = np.asarray([self.y_hot[i] for i in window_idx])
@@ -468,7 +471,11 @@ class Model_1(_Model):
         if not isinstance(self.smiles, type(None)):
             if not utils.is_positive_integer_or_zero_array(X):
                 raise utils.InputError("Indices should be passed to the predict function as smiles strings are already stored in the class.")
-            X_strings = [self.padded_smiles[int(i)] for i in X] # Using the 'G' and 'E' padded version since the hot encoded version has also the padding
+
+            # This line is just so that the indices are ints of the right shape for Osprey
+            X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0],))
+
+            X_strings = [self.padded_smiles[i] for i in X] # Using the 'G' and 'E' padded version since the hot encoded version has also the padding
             window_idx = self._idx_to_window_idx(X)
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
         else:
@@ -738,6 +745,9 @@ class Model_2(_Model):
             if not utils.is_positive_integer_or_zero_array(X):
                 raise utils.InputError("The indices need to be positive or zero integers.")
 
+            # This line is just so that the indices are ints of the right shape for Osprey
+            X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0], ))
+
             X_hot = np.asarray([self.X_hot[i] for i in X])
             y_hot = np.asarray([self.y_hot[i] for i in X])
         else:
@@ -770,6 +780,9 @@ class Model_2(_Model):
         elif not isinstance(self.smiles, type(None)):
             if not utils.is_positive_integer_or_zero_array(X):
                 raise utils.InputError("The indices need to be positive or zero integers.")
+
+            # This line is just so that the indices are ints of the right shape for Osprey
+            X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0],))
 
             X_hot = np.asarray([self.X_hot[i][:frag_length] for i in X])
             X_strings = np.asarray([self.padded_smiles[i][:frag_length] for i in X])
