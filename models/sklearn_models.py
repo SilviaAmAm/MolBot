@@ -1,3 +1,4 @@
+from keras import optimizers
 from keras import Sequential
 from keras.layers import LSTM
 from keras.layers import Dense
@@ -19,7 +20,7 @@ class _Model(BaseEstimator):
     """
 
     def __init__(self, tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
-                 batch_size, nb_epochs, smiles):
+                 batch_size, nb_epochs, smiles, learning_rate):
         """
         This function initialises the parent class common to both Model 1 and 2.
 
@@ -39,6 +40,8 @@ class _Model(BaseEstimator):
         :type nb_epochs: int
         :param smiles: list of smiles strings from which to learn
         :type smiles: list of strings
+        :param learning_rate: size of the step taken by the optimiser
+        :type learning_rate: float > 0
         """
 
         self.tensorboard = self._set_tensorboard(tensorboard)
@@ -48,12 +51,14 @@ class _Model(BaseEstimator):
         self.dropout_2 = self._set_dropout(dropout_2)
         self.batch_size = self._set_provisional_batch_size(batch_size)
         self.nb_epochs = self._set_epochs(nb_epochs)
+        self.learning_rate = self._set_learning_rate(learning_rate)
 
         self.model = None
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
         self.n_feat = None
+        self.padded_smiles = None
         if not isinstance(smiles, type(None)):
             self.smiles = self._check_smiles(smiles)
         else:
@@ -109,6 +114,23 @@ class _Model(BaseEstimator):
             return epochs
         else:
             raise utils.InputError("The number of epochs should be a positive integer. Got %s." % (str(epochs)))
+
+    def _set_learning_rate(self, lr):
+        """
+        This function checks that the learning rate is a float larger than zero
+
+        :param lr: learning rate
+        :type: float > 0
+        :return: approved learning rate
+        """
+
+        if isinstance(lr, (float, int)):
+            if lr > 0.0:
+                return lr
+            else:
+                raise utils.InputError("The learning rate should be larger than 0.")
+        else:
+            raise utils.InputError("The learning rate should be number larger than 0.")
 
     def _check_smiles(self, smiles):
         if utils.is_array_like(smiles):
@@ -367,7 +389,7 @@ class Model_1(_Model):
     When presented with a new smiles fragment it predicts the most likely next character."""
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size="auto", nb_epochs=4, window_length=10, smiles=None):
+                 batch_size="auto", nb_epochs=4, window_length=10, smiles=None, learning_rate=0.001):
         """
         This function uses the initialiser of the parent class and initialises the window length.
 
@@ -392,7 +414,7 @@ class Model_1(_Model):
         """
 
         super(Model_1, self).__init__(tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
-                 batch_size, nb_epochs, smiles)
+                 batch_size, nb_epochs, smiles, learning_rate)
 
         # TODO make check for window length
         self.window_length = window_length
@@ -446,7 +468,7 @@ class Model_1(_Model):
         if not isinstance(self.smiles, type(None)):
             if not utils.is_positive_integer_or_zero_array(X):
                 raise utils.InputError("Indices should be passed to the predict function as smiles strings are already stored in the class.")
-            X_strings = [self.smiles[int(i)] for i in X]
+            X_strings = [self.padded_smiles[int(i)] for i in X] # Using the 'G' and 'E' padded version since the hot encoded version has also the padding
             window_idx = self._idx_to_window_idx(X)
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
         else:
@@ -475,7 +497,8 @@ class Model_1(_Model):
         # Modifying the softmax with the `Temperature' parameter
         model.add(Lambda(lambda x: x / 1))
         model.add(Activation('softmax'))
-        model.compile(loss="categorical_crossentropy", optimizer="rmsprop")
+        optimiser = optimizers.Adam(lr=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+        model.compile(loss="categorical_crossentropy", optimizer=optimiser)
 
         self.model = model
 
@@ -522,8 +545,9 @@ class Model_1(_Model):
 
             n_possible_char = len(self.idx_to_char)
 
-        if not isinstance(self.smiles, type(None)):
-            self.smiles = new_molecules
+        # if not isinstance(self.smiles, type(None)):
+        #     self.smiles = new_molecules
+        self.padded_smiles = new_molecules  # These are only padded with 'G' and 'E', not 'A' like for model 2
 
         # Splitting X into window lengths and y into the characters after each window
         window_X = []
@@ -670,7 +694,7 @@ class Model_2(_Model):
     """
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size=500, nb_epochs=4, smiles=None):
+                 batch_size="auto", nb_epochs=4, smiles=None, learning_rate=0.001):
         """
             This function uses the initialiser of the parent class and initialises the window length.
 
@@ -693,7 +717,7 @@ class Model_2(_Model):
             """
 
         super(Model_2, self).__init__(tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
-                                     batch_size, nb_epochs, smiles)
+                                     batch_size, nb_epochs, smiles, learning_rate)
 
         if not isinstance(self.smiles, type(None)):
             self.X_hot, self.y_hot = self._hot_encode(smiles)
@@ -748,7 +772,7 @@ class Model_2(_Model):
                 raise utils.InputError("The indices need to be positive or zero integers.")
 
             X_hot = np.asarray([self.X_hot[i][:frag_length] for i in X])
-            X_strings = np.asarray([self.smiles[i][:frag_length] for i in X])
+            X_strings = np.asarray([self.padded_smiles[i][:frag_length] for i in X])
         # Predictions will start from fragments of smiles strings passed through the argument
         else:
             X = self._check_smiles(X)
@@ -840,8 +864,9 @@ class Model_2(_Model):
                     input_sequence[j][sample_idx[j]] = 1.0
                 X_hot.append(input_sequence)
 
-        if not isinstance(self.smiles, type(None)):
-            self.smiles = new_molecules
+        # if not isinstance(self.smiles, type(None)):
+        #     self.smiles = new_molecules
+        self.padded_smiles = new_molecules
 
         return X_hot, y_hot
 
@@ -862,7 +887,9 @@ class Model_2(_Model):
         # Modifying softmax with temperature
         model.add(Lambda(lambda x: x / 1))
         model.add(Activation('softmax'))
-        model.compile(loss="categorical_crossentropy", optimizer="rmsprop")
+        optimiser = optimizers.Adam(lr=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
+                                    amsgrad=False)
+        model.compile(loss="categorical_crossentropy", optimizer=optimiser)
 
         self.model = model
 
