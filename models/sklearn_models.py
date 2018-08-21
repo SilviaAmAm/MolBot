@@ -14,6 +14,7 @@ import re
 import pickle
 from sklearn.base import BaseEstimator
 import utils
+import sklearn.model_selection as modsel
 
 class _Model(BaseEstimator):
     """
@@ -173,9 +174,11 @@ class _Model(BaseEstimator):
 
         X_hot, y_hot = self._initialise_data_fit(X)
 
-        self.n_samples = X_hot.shape[0]
-        self.max_size = X_hot.shape[1]
-        self.n_feat = X_hot.shape[2]
+        X_hot_train, X_hot_val, y_hot_train, y_hot_val = modsel.train_test_split(X_hot, y_hot, test_size=0.05)
+
+        self.n_samples = X_hot_train.shape[0]
+        self.max_size = X_hot_train.shape[1]
+        self.n_feat = X_hot_train.shape[2]
 
         batch_size = self._set_batch_size()
 
@@ -186,33 +189,33 @@ class _Model(BaseEstimator):
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.model.fit(X_hot, y_hot, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                               callbacks=callbacks_list, validation_split=0.05)
+                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               callbacks=callbacks_list, validation_data=(X_hot_val, y_hot_val))
             else:
-                self.model.fit(X_hot, y_hot, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                               validation_split=0.05)
+                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               validation_data=(X_hot_val, y_hot_val))
 
         elif not isinstance(self.model, type(None)):
             if self.tensorboard == True:
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                               callbacks=callbacks_list, validation_split=0.05)
+                self.model.fit(X_hot_train, y_hot_train, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               callbacks=callbacks_list, validation_data=(X_hot_val, y_hot_val))
             else:
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                               validation_split=0.05)
+                self.model.fit(X_hot_train, y_hot_train, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               validation_data=(X_hot_val, y_hot_val))
 
         elif not isinstance(self.loaded_model, type(None)):
             if self.tensorboard == True:
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                                      callbacks=callbacks_list, validation_split=0.05)
+                self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                                      callbacks=callbacks_list, validation_data=(X_hot_val, y_hot_val))
             else:
-                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1,
-                                      nb_epoch=self.nb_epochs, validation_split=0.05)
+                self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=self.batch_size, verbose=1,
+                                      nb_epoch=self.nb_epochs, validation_data=(X_hot_val, y_hot_val))
 
         else:
             raise utils.InputError("No model has been fit already or has been loaded.")
