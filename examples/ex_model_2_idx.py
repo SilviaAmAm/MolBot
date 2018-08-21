@@ -24,7 +24,8 @@ estimator.fit(idx_train)
 
 
 start = time.time()
-predictions = estimator.predict()
+idx_predict = list(range(5))
+predictions = estimator.predict(idx_predict)
 print(predictions)
 end = time.time()
 print("The time taken to predict is %f" % (end-start))

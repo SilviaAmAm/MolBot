@@ -16,20 +16,20 @@ for line in in_d:
     else:
         molecules.append(molecule)
 
-estimator = sklearn_models.Model_1(nb_epochs=1, smiles=molecules, batch_size=5000)
+estimator = sklearn_models.Model_1(nb_epochs=1, smiles=molecules[:100], batch_size=50)
 
-idx_train = list(range(int(len(molecules))))
+idx_train = list(range(int(len(molecules[:100]))))
 
 estimator.fit(idx_train)
 
 
 
 start = time.time()
-predictions = estimator.predict(list(range(5)))
+predictions = estimator.predict(list(range(40)))
 end = time.time()
 print("The time taken to predict is %f" % (end-start))
 
-score = estimator.score(range(5))
+score = estimator.score(list(range(5)))
 print(score)
 
 tanimoto = estimator.score_similarity(predictions, molecules[:5])

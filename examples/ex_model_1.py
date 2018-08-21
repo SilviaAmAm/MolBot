@@ -14,12 +14,13 @@ for line in in_d:
     else:
         molecules.append(molecule)
 
-estimator = sklearn_models.Model_1(nb_epochs=1)
+estimator = sklearn_models.Model_1(nb_epochs=1, batch_size=5000)
 
-estimator.fit(molecules)
+estimator.fit(molecules[:100])
+print(estimator.char_to_idx['G'])
 
 start = time.time()
-predictions = estimator.predict(molecules[:100])
+predictions = estimator.predict(molecules[:40])
 end = time.time()
 print("The time taken to predict is %f" % (end-start))
 

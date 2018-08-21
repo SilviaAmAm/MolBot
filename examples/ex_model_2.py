@@ -15,17 +15,15 @@ for line in in_d:
     else:
         molecules.append(molecule)
 
-estimator = sklearn_models.Model_2(nb_epochs=3)
+estimator = sklearn_models.Model_2(nb_epochs=1)
 
 estimator.fit(molecules[:4])
 
-fragments = []
-for i in range(4):
-    fragments.append(molecules[i][:10])
+predictions = estimator.predict(molecules[:4])
 
-predictions = estimator.predict(fragments)
+score = estimator.score(molecules[:4])
 
-score = estimator.score()
+print(predictions)
 
 f = open("/Volumes/Transcend/repositories/NovaData/pred_smiles/pred_smiles_2.txt", 'w')
 

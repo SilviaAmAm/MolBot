@@ -25,7 +25,7 @@ search_space:
 cv:
   name: kfold
   params:
-    n_splits: 3
+    n_folds: 3
     shuffle: True
 
 dataset_loader:
