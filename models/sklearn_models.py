@@ -187,9 +187,10 @@ class _Model(BaseEstimator):
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
                 self.model.fit(X_hot, y_hot, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                               callbacks=callbacks_list)
+                               callbacks=callbacks_list, validation_split=0.05)
             else:
-                self.model.fit(X_hot, y_hot, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs)
+                self.model.fit(X_hot, y_hot, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               validation_split=0.05)
 
         elif not isinstance(self.model, type(None)):
             if self.tensorboard == True:
@@ -197,9 +198,10 @@ class _Model(BaseEstimator):
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
                 self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                               callbacks=callbacks_list)
+                               callbacks=callbacks_list, validation_split=0.05)
             else:
-                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
+                self.model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                               validation_split=0.05)
 
         elif not isinstance(self.loaded_model, type(None)):
             if self.tensorboard == True:
@@ -207,9 +209,10 @@ class _Model(BaseEstimator):
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
                 self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
-                                      callbacks=callbacks_list)
+                                      callbacks=callbacks_list, validation_split=0.05)
             else:
-                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs)
+                self.loaded_model.fit(X_hot, y_hot, batch_size=self.batch_size, verbose=1,
+                                      nb_epoch=self.nb_epochs, validation_split=0.05)
 
         else:
             raise utils.InputError("No model has been fit already or has been loaded.")
