@@ -933,12 +933,8 @@ class Model_2(_Model):
             X_pred[0, 0, self.char_to_idx['G']] = 1
 
             for i in range(1, max_length):
-                if i == 1:
-                    out = model.predict(X_pred[:, :i, :])[0][-1]
-                    idx_out = np.random.choice(np.arange(self.n_feat), p=out)
-                else:
-                    out = model.predict(X_pred[:, :i, :])[0][-1]
-                    idx_out = np.argmax(out)
+                out = model.predict(X_pred[:, :i, :])[0][-1]
+                idx_out = np.random.choice(np.arange(self.n_feat), p=out)
                 X_pred[0, i, idx_out] = 1
                 if self.idx_to_char[idx_out] == 'E':
                     break
