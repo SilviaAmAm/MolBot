@@ -482,18 +482,18 @@ class Model_1(_Model):
             # This line is just so that the indices are ints of the right shape for Osprey
             X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0],))
 
-            X_strings = [self.padded_smiles[i] for i in X] # Using the 'G' and 'E' padded version since the hot encoded version has also the padding
+            X_strings_padded = [self.padded_smiles[i] for i in X] # Using the 'G' and 'E' padded version since the hot encoded version has also the padding
             window_idx = self._idx_to_window_idx(X)
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
         else:
             self._check_smiles(X)
             X_hot, _ = self._hot_encode(X)
             # Adding G and E at the ends since the hot version has it:
-            X_strings = []
+            X_strings_padded = []
             for item in X:
-                X_strings.append("G" + item + "E")
+                X_strings_padded.append("G" + item + "E")
 
-        return X_strings, X_hot
+        return X_strings_padded, X_hot
 
     def _generate_model(self):
         """
@@ -648,7 +648,7 @@ class Model_1(_Model):
 
             y_pred = X_strings[i][:self.window_length]
 
-            X_pred_temp = X_pred
+            X_pred_temp = np.zeros(X_pred.shape)
 
             while (y_pred[-1] != 'E'):
                 out = model.predict(X_pred_temp)  # shape (1, n_feat)
@@ -940,7 +940,10 @@ class Model_2(_Model):
 
             for i in range(1, max_length):
                 out = model.predict(X_pred[:, :i, :])[0][-1]
-                idx_out = np.random.choice(np.arange(self.n_feat), p=out)
+                if i == 1:
+                    idx_out = np.random.choice(np.arange(self.n_feat), p=out)
+                else:
+                    idx_out = np.argmax(out)
                 X_pred[0, i, idx_out] = 1
                 if self.idx_to_char[idx_out] == 'E':
                     break
