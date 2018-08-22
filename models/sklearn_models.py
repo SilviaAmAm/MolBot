@@ -80,7 +80,7 @@ class _Model(BaseEstimator):
             raise utils.InputError("The number of hidden neurons should be a positive non zero integer. Got %s." % (str(h)))
 
     def _set_dropout(self, drop):
-        if drop > 0 and drop < 1:
+        if drop >= 0.0 and drop < 1.0:
             return drop
         else:
             raise utils.InputError(
