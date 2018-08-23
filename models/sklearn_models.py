@@ -648,14 +648,14 @@ class Model_1(_Model):
 
             y_pred = X_strings[i][:self.window_length]
 
-            X_pred_temp = np.zeros(X_pred.shape)
+            X_pred_temp = np.copy(X_pred)
 
             while (y_pred[-1] != 'E'):
                 out = model.predict(X_pred_temp)  # shape (1, n_feat)
                 y_pred += self._hot_decode(np.reshape(out, (1, out.shape[0], out.shape[1])))[0]
-                X_pred_temp[:, :-1, :] = X_pred[:, 1:, :]
+                X_pred_temp[:, :-1, :] = X_pred_temp[:, 1:, :]
 
-                y_pred_hot = np.zeros((1, X_pred.shape[-1]))
+                y_pred_hot = np.zeros((1, X_pred_temp.shape[-1]))
                 y_pred_hot[:, np.argmax(out)] = 1
 
                 X_pred_temp[:, -1, :] = y_pred_hot
