@@ -59,6 +59,7 @@ class _Model(BaseEstimator):
         self.loaded_model = None
         self.idx_to_char = None
         self.char_to_idx = None
+        self.max_size = None
         self.n_feat = None
         self.padded_smiles = None
         if not isinstance(smiles, type(None)):
@@ -347,7 +348,7 @@ class _Model(BaseEstimator):
         else:
             raise utils.InputError("No model to be saved.")
 
-        pickle.dump([self.char_to_idx, self.idx_to_char], open( "idx_dict.pickle", "wb" ))
+        pickle.dump([self.char_to_idx, self.idx_to_char, self.max_size], open( "idx_dict.pickle", "wb" ))
 
     def load(self, filename='model.h5'):
         """
@@ -356,12 +357,12 @@ class _Model(BaseEstimator):
         :param filename: Name of the file in which the model has been previously saved.
         :return: None
         """
-
         self.loaded_model = load_model(filename)
 
         idx_dixt = pickle.load(open("idx_dict.pickle", "rb"))
         self.char_to_idx = idx_dixt[0]
         self.idx_to_char = idx_dixt[1]
+        self.max_size = idx_dixt[2]
 
     def _make_rdkit_mol(self, X):
         """
@@ -477,7 +478,7 @@ class Model_1(_Model):
 
         if not isinstance(self.smiles, type(None)):
             if not utils.is_positive_integer_or_zero_array(X):
-                raise utils.InputError("Indices should be passed to the predict function as smiles strings are already stored in the class.")
+                raise utils.InputError("Indices should be passed to the predict function since smiles strings are already stored in the class.")
 
             # This line is just so that the indices are ints of the right shape for Osprey
             X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0],))
@@ -758,7 +759,7 @@ class Model_2(_Model):
             X_hot = np.asarray([self.X_hot[i] for i in X])
             y_hot = np.asarray([self.y_hot[i] for i in X])
         else:
-            X_hot, y_hot = self._hot_encode(self._check_smiles(X))
+            X_hot, y_hot = self._hot_encode_fitting(self._check_smiles(X))
 
         return X_hot, y_hot
 
@@ -797,21 +798,78 @@ class Model_2(_Model):
         else:
             X = self._check_smiles(X)
             X_strings = [item[:frag_length] for item in X]  # No 'G' is added because it is done in the Hot encode function
-            X_hot, y_hot = self._hot_encode(X_strings)
+            X_hot, y_hot = self._hot_encode_predict(X_strings)
             X_strings = ["G" + item[:frag_length] for item in X] # Now the G is needed since the hot encoded fragments will have it
 
         return X_strings, X_hot
 
-    def _hot_encode(self, X):
+    def _padd_GEA(self, smiles, max_size):
         """
-        This function takes in a list of smiles strings and hot encodes them. If it is called from the fit function it
-        hot encodes also the 'y'. If it is called from the predict function, it just hot encodes the fragments given.
-        :param X: smiles strings
-        :type X: list of strings
-        :return: the smiles strings hot encoded.
-        :rtype: two numpy arrays of shape (n_samples, max_size, n_feat) or a list of numpy array of shape (fragment_length, n_feat)
+        This function takes some smiles and appends 'G' and 'E' at the extremities and then adds 'A' to all the smiles
+        that are shorter than max_length.
+
+        :param smiles: list of smiles strings
+        :param max_size: max length of the smiles strings
+        :return: list of padded smiles strings
         """
-        
+
+        new_molecules = []
+        for molecule in smiles:
+            molecule = 'G' + molecule + 'E'
+            if len(molecule) <= max_size:
+                padding = int(max_size - len(molecule))
+                for i in range(padding):
+                    molecule += 'A'
+            else:
+                raise utils.InputError("One of the smiles exceeds the maximum length of %i." % (max_size))
+            new_molecules.append(molecule)
+
+        return new_molecules
+
+    def _onehot_encode(self, padded_smiles, max_size, n_feat):
+        """
+        This function takes the padded smiles and hot encodes them.
+
+        :param padded_smiles: list of smiles strings that are padded
+        :param max_size: the maximum length of the smiles strings
+        :param n_feat: the number of characters present in the strings
+        :return: two numpy arrays of shape (n_samples, max_size, n_feat) and (n_samples, n_feat)
+        """
+        n_samples = int(len(padded_smiles))
+
+        X_hot = np.zeros((n_samples, max_size, n_feat), dtype=np.int16)
+        y_hot = np.zeros((n_samples, max_size, n_feat), dtype=np.int16)
+
+        for n in range(n_samples):
+            sample = padded_smiles[n]
+            try:
+                sample_idx = [self.char_to_idx[char] for char in sample]
+            except KeyError:
+                raise utils.InputError(
+                    "One of the molecules contains a character that was not present in the first round of training.")
+            input_sequence = np.zeros((max_size, n_feat))
+            for j in range(max_size):
+                input_sequence[j][sample_idx[j]] = 1.0
+            X_hot[n] = input_sequence
+
+            output_sequence = np.zeros((max_size, n_feat))
+            for j in range(max_size - 1):
+                output_sequence[j][sample_idx[j + 1]] = 1.0
+            y_hot[n] = output_sequence
+
+        return X_hot, y_hot
+
+    def _hot_encode_fitting(self, X):
+        """
+        This function hot encodes the smiles for the fit function. When the fit function is called for the first time,
+        the strings are padded with 'G', 'A' and 'E' and the idx_to_char dictionaries are created and subsequently used
+        for hot encoding. When the fit function is called later, the stings are padded with 'G', 'A' and 'E' and hot
+        encoded using the existing idx_to_char dictionaries.
+
+        :param X: the smiles strings hot encoded.
+        :return: two numpy arrays of shape (n_samples, max_size, n_feat)
+        """
+
         if isinstance(self.idx_to_char, type(None)) and isinstance(self.char_to_idx, type(None)):
             all_possible_char = ['G', 'E', 'A']
             max_size = 2
@@ -830,65 +888,62 @@ class Model_2(_Model):
             all_possible_char.sort()
 
             # Padding
-            new_molecules = []
-            for molecule in X:
-                molecule = 'G' + molecule + 'E'
-                if len(molecule) < max_size:
-                    padding = int(max_size - len(molecule))
-                    for i in range(padding):
-                        molecule += 'A'
-                new_molecules.append(molecule)
+            new_molecules = self._padd_GEA(X, max_size)
 
             self.idx_to_char = {idx: char for idx, char in enumerate(all_possible_char)}
             self.char_to_idx = {char: idx for idx, char in enumerate(all_possible_char)}
+            self.max_size = max_size
             n_feat = len(self.idx_to_char)
 
-            n_samples = int(len(new_molecules))
+            X_hot, y_hot = self._onehot_encode(new_molecules, max_size, n_feat)
 
-            X_hot = np.zeros((n_samples, max_size, n_feat), dtype=np.int32)
-            y_hot = np.zeros((n_samples, max_size, n_feat), dtype=np.int32)
-
-            for n in range(n_samples):
-                sample = new_molecules[n]
-                sample_idx = [self.char_to_idx[char] for char in sample]
-                input_sequence = np.zeros((max_size, n_feat))
-                for j in range(max_size):
-                    input_sequence[j][sample_idx[j]] = 1.0
-                X_hot[n] = input_sequence
-
-                output_sequence = np.zeros((max_size, n_feat))
-                for j in range(max_size - 1):
-                    output_sequence[j][sample_idx[j + 1]] = 1.0
-                y_hot[n] = output_sequence
-            
         else:
-            new_molecules = []
-            max_size = 1
-            for molecule in X:
-                if len(molecule)+1 > max_size:
-                    max_size = len(molecule)+1
-                molecule = "G" + molecule
-                new_molecules.append(molecule)
+
+            new_molecules = self._padd_GEA(X, self.max_size)
 
             n_feat = len(self.idx_to_char)
-            n_samples = int(len(new_molecules))
 
-            X_hot = []
-            y_hot = []
+            X_hot, y_hot = self._onehot_encode(new_molecules, self.max_size, n_feat)
 
-            for n in range(n_samples):
-                sample = new_molecules[n]
-                sample_idx = [self.char_to_idx[char] for char in sample]
-                input_sequence = np.zeros((len(sample), n_feat))
-                for j in range(len(sample)):
-                    input_sequence[j][sample_idx[j]] = 1.0
-                X_hot.append(input_sequence)
-
-        # if not isinstance(self.smiles, type(None)):
-        #     self.smiles = new_molecules
         self.padded_smiles = new_molecules
 
         return X_hot, y_hot
+
+    def _hot_encode_predict(self, X):
+        """
+        This function takes the smiles fragments that will be used for prediction and adds a 'G' in front of them before
+        hot encoding them.
+
+        :param X: list of smiles strings fragments
+        :return: list of hot encoded padded fragments of smile string
+        """
+
+        new_molecules = []
+        max_size = 1
+        for molecule in X:
+            if len(molecule) + 1 > max_size:
+                max_size = len(molecule) + 1
+            molecule = "G" + molecule
+            new_molecules.append(molecule)
+
+        if self.max_size < max_size:
+            raise utils.InputError("The length of a fragment is longer than the maximum length of smiles strings "
+                                   "(%i characters)." % (self.max_size))
+
+        n_feat = len(self.idx_to_char)
+        n_samples = int(len(new_molecules))
+
+        X_hot = []
+
+        for n in range(n_samples):
+            sample = new_molecules[n]
+            sample_idx = [self.char_to_idx[char] for char in sample]
+            input_sequence = np.zeros((len(sample), n_feat))
+            for j in range(len(sample)):
+                input_sequence[j][sample_idx[j]] = 1.0
+            X_hot.append(input_sequence)
+
+        return X_hot
 
     def _generate_model(self):
         """
