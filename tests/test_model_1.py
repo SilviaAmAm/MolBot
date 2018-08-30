@@ -1,4 +1,5 @@
 import sklearn_models as sm
+import os
 
 def test_set_tb():
 
@@ -122,8 +123,6 @@ def test_score():
     correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
                       "O=C(C)Oc1ccccc1C(=O)O"]
     correct_idx = [0, 1, 2]
-    incorrect_smiles = [[1, 2, 3], [4, 5, 6]]
-    incorrect_idx = [4, 5, 6]
 
     estimator = sm.Model_1(smiles=correct_smiles)
     estimator.fit(correct_idx)
@@ -139,6 +138,41 @@ def test_score():
     score = estimator.score(correct_smiles)
     assert score >= 0
 
+def test_resume():
+    correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
+                      "O=C(C)Oc1ccccc1C(=O)O"]
+
+    estimator = sm.Model_1(window_length=15, nb_epochs=3)
+    estimator.fit(correct_smiles)
+    estimator.predict(correct_smiles[:2])
+    estimator.fit(correct_smiles)
+
+def test_save():
+    correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
+                      "O=C(C)Oc1ccccc1C(=O)O"]
+
+    estimator = sm.Model_1(window_length=15, nb_epochs=3)
+    estimator.fit(correct_smiles)
+    estimator.save(filename="temp.h5")
+
+def test_reload_predict():
+    correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
+                      "O=C(C)Oc1ccccc1C(=O)O"]
+
+    estimator = sm.Model_1(window_length=15, nb_epochs=3)
+    estimator.load(filename="temp.h5")
+    estimator.predict([correct_smiles[0]])
+
+def test_reload_fit():
+    correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
+                      "O=C(C)Oc1ccccc1C(=O)O"]
+
+    estimator = sm.Model_1(window_length=15, nb_epochs=3)
+    estimator.load(filename="temp.h5")
+    estimator.fit(correct_smiles)
+
+    os.remove("temp.h5")
+    os.remove("idx_dict.pickle")
 
 if __name__ == "__main__":
     test_set_tb()
@@ -148,3 +182,7 @@ if __name__ == "__main__":
     test_fit()
     test_predict()
     test_score()
+    test_resume()
+    test_save()
+    test_reload_predict()
+    test_reload_fit()

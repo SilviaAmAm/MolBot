@@ -201,10 +201,10 @@ class _Model(BaseEstimator):
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.model.fit(X_hot_train, y_hot_train, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
                                callbacks=callbacks_list, validation_data=(X_hot_val, y_hot_val))
             else:
-                self.model.fit(X_hot_train, y_hot_train, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
                                validation_data=(X_hot_val, y_hot_val))
 
         elif not isinstance(self.loaded_model, type(None)):
@@ -212,10 +212,10 @@ class _Model(BaseEstimator):
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=self.batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
                                       callbacks=callbacks_list, validation_data=(X_hot_val, y_hot_val))
             else:
-                self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=self.batch_size, verbose=1,
+                self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1,
                                       nb_epoch=self.nb_epochs, validation_data=(X_hot_val, y_hot_val))
 
         else:
@@ -447,7 +447,7 @@ class Model_1(_Model):
                 raise utils.InputError("The indices need to be positive or zero integers.")
 
             # This line is just so that the indices are ints of the right shape for Osprey
-            X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0],))
+            X = np.reshape(np.asarray(X).astype(np.int32), (np.asarray(X).shape[0],))
 
             window_idx = self._idx_to_window_idx(X)      # Converting from the index of the sample to the index of the windows
             X_hot = np.asarray([self.X_hot[i] for i in window_idx])
@@ -481,7 +481,7 @@ class Model_1(_Model):
                 raise utils.InputError("Indices should be passed to the predict function since smiles strings are already stored in the class.")
 
             # This line is just so that the indices are ints of the right shape for Osprey
-            X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0],))
+            X = np.reshape(np.asarray(X).astype(np.int32), (np.asarray(X).shape[0],))
 
             X_strings_padded = [self.padded_smiles[i] for i in X] # Using the 'G' and 'E' padded version since the hot encoded version has also the padding
             window_idx = self._idx_to_window_idx(X)
@@ -735,7 +735,7 @@ class Model_2(_Model):
                                      batch_size, nb_epochs, smiles, learning_rate)
 
         if not isinstance(self.smiles, type(None)):
-            self.X_hot, self.y_hot = self._hot_encode(smiles)
+            self.X_hot, self.y_hot = self._hot_encode_fitting(smiles)
 
     def _initialise_data_fit(self, X):
         """
@@ -754,7 +754,7 @@ class Model_2(_Model):
                 raise utils.InputError("The indices need to be positive or zero integers.")
 
             # This line is just so that the indices are ints of the right shape for Osprey
-            X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0], ))
+            X = np.reshape(np.asarray(X).astype(np.int32), (np.asarray(X).shape[0], ))
 
             X_hot = np.asarray([self.X_hot[i] for i in X])
             y_hot = np.asarray([self.y_hot[i] for i in X])
@@ -790,7 +790,7 @@ class Model_2(_Model):
                 raise utils.InputError("The indices need to be positive or zero integers.")
 
             # This line is just so that the indices are ints of the right shape for Osprey
-            X = np.reshape(np.asarray(X).astype(np.int32), (X.shape[0],))
+            X = np.reshape(np.asarray(X).astype(np.int32), (np.asarray(X).shape[0],))
 
             X_hot = np.asarray([self.X_hot[i][:frag_length] for i in X])
             X_strings = np.asarray([self.padded_smiles[i][:frag_length] for i in X])
@@ -798,7 +798,7 @@ class Model_2(_Model):
         else:
             X = self._check_smiles(X)
             X_strings = [item[:frag_length] for item in X]  # No 'G' is added because it is done in the Hot encode function
-            X_hot, y_hot = self._hot_encode_predict(X_strings)
+            X_hot = self._hot_encode_predict(X_strings)
             X_strings = ["G" + item[:frag_length] for item in X] # Now the G is needed since the hot encoded fragments will have it
 
         return X_strings, X_hot
