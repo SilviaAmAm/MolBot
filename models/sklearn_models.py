@@ -334,32 +334,38 @@ class _Model(BaseEstimator):
 
         return tanimoto_coeff, percent_duplicates
 
-    def save(self, filename='model.h5'):
+    def save(self, filename='model'):
         """
         This function enables to save the trained model so that then training or predictions can be done at a later stage.
 
         :param filename: Name of the file in which to save the model.
         :return: None
         """
+        model_name = filename + ".h5"
+        dict_name = filename + ".pickle"
+
         if not isinstance(self.model, type(None)):
-            self.model.save(filename, overwrite=False)
+            self.model.save(model_name, overwrite=False)
         elif not isinstance(self.loaded_model, type(None)):
-            self.loaded_model.save(filename, overwrite=False)
+            self.loaded_model.save(model_name, overwrite=False)
         else:
             raise utils.InputError("No model to be saved.")
 
-        pickle.dump([self.char_to_idx, self.idx_to_char, self.max_size], open( "idx_dict.pickle", "wb" ))
+        pickle.dump([self.char_to_idx, self.idx_to_char, self.max_size], open( dict_name, "wb" ))
 
-    def load(self, filename='model.h5'):
+    def load(self, filename='model'):
         """
         This function loads a model that has been previously saved.
 
         :param filename: Name of the file in which the model has been previously saved.
         :return: None
         """
-        self.loaded_model = load_model(filename)
+        model_name = filename + ".h5"
+        dict_name = filename + ".pickle"
 
-        idx_dixt = pickle.load(open("idx_dict.pickle", "rb"))
+        self.loaded_model = load_model(model_name)
+
+        idx_dixt = pickle.load(open(dict_name, "rb"))
         self.char_to_idx = idx_dixt[0]
         self.idx_to_char = idx_dixt[1]
         self.max_size = idx_dixt[2]
