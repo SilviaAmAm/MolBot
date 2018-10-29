@@ -257,11 +257,11 @@ class _Model(BaseEstimator):
             model = self._modify_model_for_predictions(self.model, temperature)
 
         action_prob_placeholder = model.output
-        action_onehot_placeholder = K.placeholder(shape=(None, self.n_feat), name="action_onehot")
+        action_onehot_placeholder = K.placeholder(shape=(None, None, self.n_feat), name="action_onehot")
 
         discount_reward_placeholder = K.placeholder(shape=(None,), name="reward")
 
-        action_probability = K.sum(action_prob_placeholder * action_onehot_placeholder, axis=1)
+        action_probability = K.sum(action_prob_placeholder * action_onehot_placeholder, axis=-1)
         log_action_prob = K.log(action_probability)
 
         loss = - log_action_prob * discount_reward_placeholder
@@ -286,13 +286,15 @@ class _Model(BaseEstimator):
         """
 
         from rdkit.Chem import Descriptors, MolFromSmiles
+        from rdkit import rdBase
+        rdBase.DisableLog('rdApp.error')
 
         m = MolFromSmiles(X_string)
 
         if utils.is_none(m):
             return None
 
-        n_aromatic_heterocycles = Descriptors.NumAromaticHeterocycles(m)
+        n_aromatic_heterocycles = Descriptors.MolLogP(m)
 
         return n_aromatic_heterocycles
 
@@ -444,6 +446,8 @@ class _Model(BaseEstimator):
         self.char_to_idx = idx_dixt[0]
         self.idx_to_char = idx_dixt[1]
         self.max_size = idx_dixt[2]
+
+        self.n_feat = len(self.char_to_idx)
 
     def _make_rdkit_mol(self, X):
         """
@@ -1083,11 +1087,15 @@ class Model_2(_Model):
             X_pred[0, 0, self.char_to_idx['G']] = 1
 
             for i in range(1, max_length):
-                out = model.predict(X_pred[:, :i, :])[0][-1]
-
-                experience.append((X_pred[:, :i, :], out))
+                full_out = model.predict(X_pred[:, :i, :])
+                out = full_out[0][-1]
 
                 idx_out = np.random.choice(np.arange(self.n_feat), p=out)
+
+                one_hot_action = np.zeros(full_out.shape)
+                one_hot_action[0][-1][idx_out] = 1
+                experience.append((X_pred[:, :i, :], one_hot_action))
+
                 X_pred[0, i, idx_out] = 1
                 if self.idx_to_char[idx_out] == 'E':
                     break
@@ -1120,10 +1128,14 @@ class Model_2(_Model):
                 while y_pred[-1] != 'E':
                     X_pred = np.reshape(X_frag, (1, X_frag.shape[0], X_frag.shape[1]))  # shape (1, fragment_length, n_feat)
 
-                    out = model.predict(X_pred)[0][-1]
+                    full_out = model.predict(X_pred)
+                    out = full_out[0][-1]
 
-                    experience.append((X_pred, out))
                     idx_out = np.argmax(out)
+
+                    one_hot_action = np.zeros(full_out.shape)
+                    one_hot_action[0][-1][idx_out] = 1
+                    experience.append((X_pred, one_hot_action))
 
                     y_pred += self.idx_to_char[idx_out]
                     # X_pred = self._hot_encode([y_pred[1:]])[0][0]
@@ -1175,6 +1187,7 @@ class Model_2(_Model):
 
             # Calculate the reward
             reward_i = self._calculate_reward(prediction[0])
+            print(reward_i)
 
             # In case the predicted smile was invalid
             if utils.is_none(reward_i):
@@ -1183,16 +1196,16 @@ class Model_2(_Model):
             # exp_i contains all the states and actions taken throughout the episode
             for e in range(len(exp_i)):
                 state_i = exp_i[e][0]
-                action_i = exp_i[e][1]
+                one_hot_action_i = exp_i[e][1]
 
                 # Make experience tuples (since the reward is given at the end, intermediate time steps have the same reward)
-                an_experience = (state_i, action_i, reward_i)
+                an_experience = (state_i, one_hot_action_i, reward_i)
                 experience.append(an_experience)
 
         shuffle(experience)
 
         # Training loop over the experience:
-        for i in range(len(experience)):
+        for i in range(5):
             state = experience[i][0]
             action = experience[i][1]
             reward = experience[i][2]
