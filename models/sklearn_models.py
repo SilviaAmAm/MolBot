@@ -8,7 +8,7 @@ from keras.callbacks import TensorBoard
 from keras.layers import Lambda
 from keras.models import load_model
 import keras.backend as K
-import os
+import copy
 from random import  shuffle
 import numpy as np
 import re
@@ -250,16 +250,27 @@ class _Model(BaseEstimator):
         :rtype: a keras object and a keras function
         """
 
-        # Extending the model so that one can differentiate the new cost function with respect to the weights
+        # Keeping a model for the 'prior' and making an 'agent' model where one can differentiate the new cost function with respect to the weights
         if utils.is_none(self.model):
-            model = self._modify_model_for_predictions(self.loaded_model, temperature)
+            model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
+            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
         else:
-            model = self._modify_model_for_predictions(self.model, temperature)
+            self.save("prior_model")
+            self.load("prior_model")
+            model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
+            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
 
-        action_prob_placeholder = model.output
-        action_onehot_placeholder = K.placeholder(shape=(None, None, self.n_feat), name="action_onehot")
+        # The probabilities that the agent would assign in each state
+        agent_action_prob_placeholder = model_agent.output
+
+        # The log likelihood of a sequence from a prior
+        prior_loglikelihood = K.placeholder(shape=(None,), name="prior_loglikelihood")
 
         discount_reward_placeholder = K.placeholder(shape=(None,), name="reward")
+
+        # TODO calculate the augmented likelihood
+
+        # TODO modify the cost function so that it is based on the augmented likelihood
 
         action_probability = K.sum(action_prob_placeholder * action_onehot_placeholder, axis=-1)
         log_action_prob = K.log(action_probability)
@@ -268,12 +279,12 @@ class _Model(BaseEstimator):
         loss = K.mean(loss)
 
         optimiser = optimizers.Adam(lr=0.00001)
-        updates = optimiser.get_updates(params=model.trainable_weights, loss=loss)
+        updates = optimiser.get_updates(params=model_agent.trainable_weights, loss=loss)
 
-        rl_training_function = K.function(inputs=[model.input, action_onehot_placeholder, discount_reward_placeholder],
+        rl_training_function = K.function(inputs=[model_agent.input, action_onehot_placeholder, discount_reward_placeholder],
                                           outputs=[], updates=updates)
 
-        return model, rl_training_function
+        return model_agent, model_prior, rl_training_function
 
     def _calculate_reward(self, X_string):
         """
@@ -441,6 +452,7 @@ class _Model(BaseEstimator):
         dict_name = filename + ".pickle"
 
         self.loaded_model = load_model(model_name)
+        self.loaded_prior = load_model(model_name)
 
         idx_dixt = pickle.load(open(dict_name, "rb"))
         self.char_to_idx = idx_dixt[0]
@@ -1092,9 +1104,7 @@ class Model_2(_Model):
 
                 idx_out = np.random.choice(np.arange(self.n_feat), p=out)
 
-                one_hot_action = np.zeros(full_out.shape)
-                one_hot_action[0][-1][idx_out] = 1
-                experience.append((X_pred[:, :i, :], one_hot_action))
+                experience.append((X_pred[:, :i, :], full_out))
 
                 X_pred[0, i, idx_out] = 1
                 if self.idx_to_char[idx_out] == 'E':
@@ -1112,7 +1122,7 @@ class Model_2(_Model):
             all_predictions = [y_pred]
 
             if output_probs:
-                return all_predictions, experience
+                return all_predictions, experience[-1]
             else:
                 return all_predictions
                     
@@ -1133,9 +1143,7 @@ class Model_2(_Model):
 
                     idx_out = np.argmax(out)
 
-                    one_hot_action = np.zeros(full_out.shape)
-                    one_hot_action[0][-1][idx_out] = 1
-                    experience.append((X_pred, one_hot_action))
+                    experience.append((X_pred, full_out))
 
                     y_pred += self.idx_to_char[idx_out]
                     # X_pred = self._hot_encode([y_pred[1:]])[0][0]
@@ -1156,7 +1164,7 @@ class Model_2(_Model):
                 all_predictions.append(y_pred)
 
             if output_probs:
-                return all_predictions, experience
+                return all_predictions, experience[-1]
             else:
                 return all_predictions
 
@@ -1173,7 +1181,7 @@ class Model_2(_Model):
         """
 
         # Making the Reinforcement Learning training function
-        model, training_function = self._generate_rl_training_fn(temperature)
+        model_agent, model_prior, training_function = self._generate_rl_training_fn(temperature)
 
         # The training function takes as arguments: the state, the action and the reward.
         # These have to be calculated in advance and stored.
@@ -1182,10 +1190,19 @@ class Model_2(_Model):
         #TODO understand if modifying the model after generating the RL function is a problem
         # This generates some episodes
         for n in range(n_train_episodes):
-            prediction, exp_i = self._predict(X_strings=None, X_hot=None, model=model, max_length=max_length,
+            # Using the prior network to predict a smile
+            # prediction is the smile, exp_i is a tuple with the hot-encoded smile and the probability distributions of the actions taken at each time step
+            prediction, exp_i = self._predict(X_strings=None, X_hot=None, model=model_prior, max_length=max_length,
                                                     output_probs=True, temperature=temperature)
 
-            # Calculate the reward
+            # Calculate the action probability from the prior for the whole sequence (in the olivecrona they use the log)
+            individual_action_probability = np.sum(np.multiply(exp_i[0], exp_i[1]), axis=1)
+            sequence_log_likelihood_i = np.log(np.prod(individual_action_probability))
+
+            # Hot encoded smile
+            state_i = exp_i[-1][0]
+
+            # Calculate the reward for the finished smile
             reward_i = self._calculate_reward(prediction[0])
             print(reward_i)
 
@@ -1193,23 +1210,18 @@ class Model_2(_Model):
             if utils.is_none(reward_i):
                 continue
 
-            # exp_i contains all the states and actions taken throughout the episode
-            for e in range(len(exp_i)):
-                state_i = exp_i[e][0]
-                one_hot_action_i = exp_i[e][1]
-
-                # Make experience tuples (since the reward is given at the end, intermediate time steps have the same reward)
-                an_experience = (state_i, one_hot_action_i, reward_i)
-                experience.append(an_experience)
+            # Adding the episode to the experience memory
+            an_experience = (state_i, sequence_log_likelihood_i, reward_i)
+            experience.append(an_experience)
 
         shuffle(experience)
 
         # Training loop over the experience:
         for i in range(5):
             state = experience[i][0]
-            action = experience[i][1]
+            prior_loglikelihood = experience[i][1]
             reward = experience[i][2]
 
-            training_function([state, action, reward])
+            training_function([state, prior_loglikelihood, reward])
 
 
