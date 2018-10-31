@@ -240,7 +240,7 @@ class _Model(BaseEstimator):
 
         self._fit_with_rl(n_train_episodes, temperature, max_length)
 
-    def _generate_rl_training_fn(self, temperature):
+    def _generate_rl_training_fn(self, model_prior, model_agent):
         """
         This function extends the model so that Reinforcement Learning can be done.
 
@@ -250,15 +250,8 @@ class _Model(BaseEstimator):
         :rtype: a keras object and a keras function
         """
 
-        # Keeping a model for the 'prior' and making an 'agent' model where one can differentiate the new cost function with respect to the weights
-        if utils.is_none(self.model):
-            model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
-            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
-        else:
-            self.save("prior_model")
-            self.load("prior_model")
-            model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
-            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
+        # The first argument is the model input
+        hot_encoded_sequence = model_agent.input
 
         # The probabilities that the agent would assign in each state
         agent_action_prob_placeholder = model_agent.output
@@ -266,25 +259,28 @@ class _Model(BaseEstimator):
         # The log likelihood of a sequence from a prior
         prior_loglikelihood = K.placeholder(shape=(None,), name="prior_loglikelihood")
 
+        # The log likelihood of a sequence from the agent
+        individual_action_probability = K.sum(hot_encoded_sequence * agent_action_prob_placeholder, axis=-1)
+        agent_loglikelihood = K.log(K.prod(individual_action_probability))
+
+        # Reward that the sequence has obtained
         discount_reward_placeholder = K.placeholder(shape=(None,), name="reward")
 
-        # TODO calculate the augmented likelihood
+        # Augmented log-likelihood: prior log lokelihood + sigma * desirability of the sequence
+        sigma = K.variable(60)
+        augmented_likelihood = prior_loglikelihood + sigma * discount_reward_placeholder
 
-        # TODO modify the cost function so that it is based on the augmented likelihood
+        # Loss function
+        loss = K.pow(augmented_likelihood - agent_loglikelihood, 2)
 
-        action_probability = K.sum(action_prob_placeholder * action_onehot_placeholder, axis=-1)
-        log_action_prob = K.log(action_probability)
-
-        loss = - log_action_prob * discount_reward_placeholder
-        loss = K.mean(loss)
-
+        # Optimiser and updates
         optimiser = optimizers.Adam(lr=0.00001)
         updates = optimiser.get_updates(params=model_agent.trainable_weights, loss=loss)
 
-        rl_training_function = K.function(inputs=[model_agent.input, action_onehot_placeholder, discount_reward_placeholder],
+        rl_training_function = K.function(inputs=[hot_encoded_sequence, prior_loglikelihood, discount_reward_placeholder],
                                           outputs=[], updates=updates)
 
-        return model_agent, model_prior, rl_training_function
+        return rl_training_function
 
     def _calculate_reward(self, X_string):
         """
@@ -1180,8 +1176,18 @@ class Model_2(_Model):
         :rtype:
         """
 
+        # Keeping a model for the 'prior' and making an 'agent' model where one can differentiate the new cost function with respect to the weights
+        if utils.is_none(self.model):
+            model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
+            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
+        else:
+            self.save("prior_model")
+            self.load("prior_model")
+            model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
+            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
+
         # Making the Reinforcement Learning training function
-        model_agent, model_prior, training_function = self._generate_rl_training_fn(temperature)
+        training_function = self._generate_rl_training_fn(model_prior, model_agent)
 
         # The training function takes as arguments: the state, the action and the reward.
         # These have to be calculated in advance and stored.
@@ -1191,16 +1197,17 @@ class Model_2(_Model):
         # This generates some episodes
         for n in range(n_train_episodes):
             # Using the prior network to predict a smile
-            # prediction is the smile, exp_i is a tuple with the hot-encoded smile and the probability distributions of the actions taken at each time step
+            # prediction is the smile
+            # exp_i is a tuple with the hot-encoded smile and the probability distributions of the actions taken at each time step
             prediction, exp_i = self._predict(X_strings=None, X_hot=None, model=model_prior, max_length=max_length,
                                                     output_probs=True, temperature=temperature)
 
-            # Calculate the action probability from the prior for the whole sequence (in the olivecrona they use the log)
-            individual_action_probability = np.sum(np.multiply(exp_i[0], exp_i[1]), axis=1)
+            # Calculate the sequence log-likelihood for the prior
+            individual_action_probability = np.sum(np.multiply(exp_i[0], exp_i[1]), axis=-1)
             sequence_log_likelihood_i = np.log(np.prod(individual_action_probability))
 
             # Hot encoded smile
-            state_i = exp_i[-1][0]
+            state_i = exp_i[0]
 
             # Calculate the reward for the finished smile
             reward_i = self._calculate_reward(prediction[0])
@@ -1217,7 +1224,8 @@ class Model_2(_Model):
         shuffle(experience)
 
         # Training loop over the experience:
-        for i in range(5):
+        n_episodes = len(experience)
+        for i in range(1):
             state = experience[i][0]
             prior_loglikelihood = experience[i][1]
             reward = experience[i][2]
