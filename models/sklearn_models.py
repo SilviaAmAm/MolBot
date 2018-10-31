@@ -260,25 +260,26 @@ class _Model(BaseEstimator):
         prior_loglikelihood = K.placeholder(shape=(None,), name="prior_loglikelihood")
 
         # The log likelihood of a sequence from the agent
-        individual_action_probability = K.sum(hot_encoded_sequence * agent_action_prob_placeholder, axis=-1)
-        agent_loglikelihood = K.log(K.prod(individual_action_probability))
+        individual_action_probability = K.sum(hot_encoded_sequence[:, 1:] * agent_action_prob_placeholder[:, :-1], axis=-1)
+        agent_likelihood = K.prod(individual_action_probability)
+        agent_loglikelihood = K.log(agent_likelihood)
 
         # Reward that the sequence has obtained
-        discount_reward_placeholder = K.placeholder(shape=(None,), name="reward")
+        reward_placeholder = K.placeholder(shape=(None,), name="reward")
 
         # Augmented log-likelihood: prior log lokelihood + sigma * desirability of the sequence
-        sigma = K.variable(60)
-        augmented_likelihood = prior_loglikelihood + sigma * discount_reward_placeholder
+        sigma = K.constant(60)
+        augmented_likelihood = prior_loglikelihood + sigma * reward_placeholder
 
         # Loss function
         loss = K.pow(augmented_likelihood - agent_loglikelihood, 2)
 
         # Optimiser and updates
-        optimiser = optimizers.Adam(lr=0.00001)
+        optimiser = optimizers.Adam(lr=0.0001)
         updates = optimiser.get_updates(params=model_agent.trainable_weights, loss=loss)
 
-        rl_training_function = K.function(inputs=[hot_encoded_sequence, prior_loglikelihood, discount_reward_placeholder],
-                                          outputs=[], updates=updates)
+        rl_training_function = K.function(inputs=[hot_encoded_sequence, prior_loglikelihood, reward_placeholder],
+                                          outputs=[agent_action_prob_placeholder], updates=updates)
 
         return rl_training_function
 
@@ -301,9 +302,9 @@ class _Model(BaseEstimator):
         if utils.is_none(m):
             return None
 
-        n_aromatic_heterocycles = Descriptors.MolLogP(m)
+        logP = Descriptors.MolLogP(m)
 
-        return n_aromatic_heterocycles
+        return logP
 
     def predict(self, X=None, frag_length=5, temperature=1.0, max_length=100):
         """
@@ -1203,7 +1204,7 @@ class Model_2(_Model):
                                                     output_probs=True, temperature=temperature)
 
             # Calculate the sequence log-likelihood for the prior
-            individual_action_probability = np.sum(np.multiply(exp_i[0], exp_i[1]), axis=-1)
+            individual_action_probability = np.sum(np.multiply(exp_i[0][:, 1:], exp_i[1][:, :-1]), axis=-1)
             sequence_log_likelihood_i = np.log(np.prod(individual_action_probability))
 
             # Hot encoded smile
@@ -1211,7 +1212,6 @@ class Model_2(_Model):
 
             # Calculate the reward for the finished smile
             reward_i = self._calculate_reward(prediction[0])
-            print(reward_i)
 
             # In case the predicted smile was invalid
             if utils.is_none(reward_i):
@@ -1225,7 +1225,7 @@ class Model_2(_Model):
 
         # Training loop over the experience:
         n_episodes = len(experience)
-        for i in range(1):
+        for i in range(n_episodes):
             state = experience[i][0]
             prior_loglikelihood = experience[i][1]
             reward = experience[i][2]
