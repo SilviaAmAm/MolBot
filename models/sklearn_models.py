@@ -16,6 +16,7 @@ import pickle
 from sklearn.base import BaseEstimator
 import utils
 import sklearn.model_selection as modsel
+import random
 
 class _Model(BaseEstimator):
     """
@@ -240,7 +241,7 @@ class _Model(BaseEstimator):
 
         self._fit_with_rl(n_train_episodes, temperature, max_length)
 
-    def _generate_rl_training_fn(self, model_prior, model_agent):
+    def _generate_rl_training_fn(self, model_agent):
         """
         This function extends the model so that Reinforcement Learning can be done.
 
@@ -269,17 +270,18 @@ class _Model(BaseEstimator):
 
         # Augmented log-likelihood: prior log lokelihood + sigma * desirability of the sequence
         sigma = K.constant(60)
-        augmented_likelihood = prior_loglikelihood + sigma * reward_placeholder
+        desirability = reward_placeholder
+        augmented_likelihood = prior_loglikelihood + sigma * desirability
 
         # Loss function
         loss = K.pow(augmented_likelihood - agent_loglikelihood, 2)
 
         # Optimiser and updates
-        optimiser = optimizers.Adam(lr=0.0001)
+        optimiser = optimizers.Adam(lr=0.0005, clipnorm=3.0)
         updates = optimiser.get_updates(params=model_agent.trainable_weights, loss=loss)
 
         rl_training_function = K.function(inputs=[hot_encoded_sequence, prior_loglikelihood, reward_placeholder],
-                                          outputs=[agent_action_prob_placeholder], updates=updates)
+                                          outputs=[], updates=updates)
 
         return rl_training_function
 
@@ -1188,7 +1190,7 @@ class Model_2(_Model):
             model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
 
         # Making the Reinforcement Learning training function
-        training_function = self._generate_rl_training_fn(model_prior, model_agent)
+        training_function = self._generate_rl_training_fn(model_agent)
 
         # The training function takes as arguments: the state, the action and the reward.
         # These have to be calculated in advance and stored.
@@ -1196,40 +1198,46 @@ class Model_2(_Model):
 
         #TODO understand if modifying the model after generating the RL function is a problem
         # This generates some episodes
-        for n in range(n_train_episodes):
-            # Using the prior network to predict a smile
-            # prediction is the smile
-            # exp_i is a tuple with the hot-encoded smile and the probability distributions of the actions taken at each time step
-            prediction, exp_i = self._predict(X_strings=None, X_hot=None, model=model_prior, max_length=max_length,
-                                                    output_probs=True, temperature=temperature)
+        for ep in range(int(n_train_episodes/10)):
 
-            # Calculate the sequence log-likelihood for the prior
-            individual_action_probability = np.sum(np.multiply(exp_i[0][:, 1:], exp_i[1][:, :-1]), axis=-1)
-            sequence_log_likelihood_i = np.log(np.prod(individual_action_probability))
+            # Generating 10 episodes
+            for n in range(10):
+                # Using the agent network to predict a smile
+                # prediction is the smile
+                # exp_i is a tuple with the hot-encoded smile and the probability distributions of the actions taken at each time step
+                prediction, exp_i = self._predict(X_strings=None, X_hot=None, model=model_agent, max_length=max_length,
+                                                        output_probs=True, temperature=temperature)
 
-            # Hot encoded smile
-            state_i = exp_i[0]
+                # Hot encoded smile
+                state_i = exp_i[0]
 
-            # Calculate the reward for the finished smile
-            reward_i = self._calculate_reward(prediction[0])
+                # Calculate the sequence log-likelihood for the prior
+                prior_action_prob = model_prior.predict(state_i)
+                individual_action_probability = np.sum(np.multiply(state_i[:, 1:], prior_action_prob[:, :-1]), axis=-1)
+                sequence_log_likelihood_i = np.log(np.prod(individual_action_probability))
 
-            # In case the predicted smile was invalid
-            if utils.is_none(reward_i):
-                continue
+                # Calculate the reward for the finished smile
+                reward_i = self._calculate_reward(prediction[0])
 
-            # Adding the episode to the experience memory
-            an_experience = (state_i, sequence_log_likelihood_i, reward_i)
-            experience.append(an_experience)
+                # In case the predicted smile was invalid
+                if utils.is_none(reward_i):
+                    continue
 
-        shuffle(experience)
+                # Adding the episode to the experience memory
+                an_experience = (state_i, sequence_log_likelihood_i, reward_i)
+                experience.append(an_experience)
 
-        # Training loop over the experience:
-        n_episodes = len(experience)
-        for i in range(n_episodes):
-            state = experience[i][0]
-            prior_loglikelihood = experience[i][1]
-            reward = experience[i][2]
+            shuffle(experience)
 
-            training_function([state, prior_loglikelihood, reward])
+            # Training over random samples from the experience
+            for _ in range(10):
+                random_n = random.randint(0, len(experience)-1)
+                state = experience[random_n][0]
+                prior_loglikelihood = experience[random_n][1]
+                reward = experience[random_n][2]
+
+                training_function([state, prior_loglikelihood, reward])
+
+
 
 
