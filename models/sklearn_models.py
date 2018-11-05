@@ -1195,13 +1195,14 @@ class Model_2(_Model):
         # The training function takes as arguments: the state, the action and the reward.
         # These have to be calculated in advance and stored.
         experience = []
+        rewards = []
 
         #TODO understand if modifying the model after generating the RL function is a problem
         # This generates some episodes
         for ep in range(int(n_train_episodes/10)):
 
-            # Generating 10 episodes
-            for n in range(10):
+            # Generating 30 episodes and keeping the 15 with highest score
+            for n in range(30):
                 # Using the agent network to predict a smile
                 # prediction is the smile
                 # exp_i is a tuple with the hot-encoded smile and the probability distributions of the actions taken at each time step
@@ -1214,7 +1215,8 @@ class Model_2(_Model):
                 # Calculate the sequence log-likelihood for the prior
                 prior_action_prob = model_prior.predict(state_i)
                 individual_action_probability = np.sum(np.multiply(state_i[:, 1:], prior_action_prob[:, :-1]), axis=-1)
-                sequence_log_likelihood_i = np.log(np.prod(individual_action_probability))
+                prod_individual_action_prob = np.prod(individual_action_probability)
+                sequence_log_likelihood_i = np.log(prod_individual_action_prob)
 
                 # Calculate the reward for the finished smile
                 reward_i = self._calculate_reward(prediction[0])
@@ -1225,7 +1227,20 @@ class Model_2(_Model):
 
                 # Adding the episode to the experience memory
                 an_experience = (state_i, sequence_log_likelihood_i, reward_i)
-                experience.append(an_experience)
+
+                # Keeping the experiences with the highest reward
+                if len(experience) < 15:
+                    experience.append(an_experience)
+                    rewards.append(reward_i)
+                else:
+                    # If the minimum reward is smaller than the reward for the current smile, replace it
+                    min_reward = min(rewards)
+                    if min_reward < reward_i:
+                        ind_to_pop = np.argmin(rewards)
+                        del experience[ind_to_pop]
+                        del rewards[ind_to_pop]
+                        experience.append(an_experience)
+                        rewards.append(reward_i)
 
             shuffle(experience)
 
