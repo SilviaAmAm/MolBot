@@ -24,7 +24,7 @@ class _Model(BaseEstimator):
     """
 
     def __init__(self, tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
-                 batch_size, nb_epochs, smiles, learning_rate):
+                 batch_size, epochs, smiles, learning_rate):
         """
         This function initialises the parent class common to both Model 1 and 2.
 
@@ -40,8 +40,8 @@ class _Model(BaseEstimator):
         :type dropout_2: float
         :param batch_size: Size of the data set batches to use during training
         :type batch_size: int
-        :param nb_epochs: number of iterations of training
-        :type nb_epochs: int
+        :param epochs: number of iterations of training
+        :type epochs: int
         :param smiles: list of smiles strings from which to learn
         :type smiles: list of strings
         :param learning_rate: size of the step taken by the optimiser
@@ -54,7 +54,7 @@ class _Model(BaseEstimator):
         self.dropout_1 = self._set_dropout(dropout_1)
         self.dropout_2 = self._set_dropout(dropout_2)
         self.batch_size = self._set_provisional_batch_size(batch_size)
-        self.nb_epochs = self._set_epochs(nb_epochs)
+        self.epochs = self._set_epochs(epochs)
         self.learning_rate = self._set_learning_rate(learning_rate)
 
         self.model = None
@@ -192,10 +192,10 @@ class _Model(BaseEstimator):
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, epochs=self.epochs,
                                callbacks=callbacks_list, validation_data=(X_hot_val, y_hot_val))
             else:
-                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, epochs=self.epochs,
                                validation_data=(X_hot_val, y_hot_val))
 
         elif not isinstance(self.model, type(None)):
@@ -203,10 +203,10 @@ class _Model(BaseEstimator):
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, epochs=self.epochs,
                                callbacks=callbacks_list, validation_data=(X_hot_val, y_hot_val))
             else:
-                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, epochs=self.epochs,
                                validation_data=(X_hot_val, y_hot_val))
 
         elif not isinstance(self.loaded_model, type(None)):
@@ -214,11 +214,11 @@ class _Model(BaseEstimator):
                 tensorboard = TensorBoard(log_dir='./tb',
                                           write_graph=True, write_images=False)
                 callbacks_list = [tensorboard]
-                self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, nb_epoch=self.nb_epochs,
+                self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1, epochs=self.epochs,
                                       callbacks=callbacks_list, validation_data=(X_hot_val, y_hot_val))
             else:
                 self.loaded_model.fit(X_hot_train, y_hot_train, batch_size=batch_size, verbose=1,
-                                      nb_epoch=self.nb_epochs, validation_data=(X_hot_val, y_hot_val))
+                                      epochs=self.epochs, validation_data=(X_hot_val, y_hot_val))
 
         else:
             raise utils.InputError("No model has been fit already or has been loaded.")
@@ -304,9 +304,9 @@ class _Model(BaseEstimator):
         if utils.is_none(m):
             return None
 
-        logP = Descriptors.MolLogP(m)
+        TPSA = Descriptors.TPSA(m)
 
-        return logP
+        return TPSA
 
     def predict(self, X=None, frag_length=5, temperature=1.0, max_length=100):
         """
@@ -493,7 +493,7 @@ class Model_1(_Model):
     When presented with a new smiles fragment it predicts the most likely next character."""
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size="auto", nb_epochs=4, window_length=10, smiles=None, learning_rate=0.001):
+                 batch_size="auto", epochs=4, window_length=10, smiles=None, learning_rate=0.001):
         """
         This function uses the initialiser of the parent class and initialises the window length.
 
@@ -509,8 +509,8 @@ class Model_1(_Model):
         :type dropout_2: float
         :param batch_size: Size of the data set batches to use during training
         :type batch_size: int
-        :param nb_epochs: number of iterations of training
-        :type nb_epochs: int
+        :param epochs: number of iterations of training
+        :type epochs: int
         :param window_length: size of the smiles fragments from which to learn
         :type window_length: int
         :param smiles: list of smiles strings from which to learn
@@ -518,7 +518,7 @@ class Model_1(_Model):
         """
 
         super(Model_1, self).__init__(tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
-                 batch_size, nb_epochs, smiles, learning_rate)
+                 batch_size, epochs, smiles, learning_rate)
 
         # TODO make check for window length
         self.window_length = window_length
@@ -808,7 +808,7 @@ class Model_2(_Model):
     """
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size="auto", nb_epochs=4, smiles=None, learning_rate=0.001):
+                 batch_size="auto", epochs=4, smiles=None, learning_rate=0.001):
         """
             This function uses the initialiser of the parent class and initialises the window length.
 
@@ -824,14 +824,14 @@ class Model_2(_Model):
             :type dropout_2: float
             :param batch_size: Size of the data set batches to use during training
             :type batch_size: int
-            :param nb_epochs: number of iterations of training
-            :type nb_epochs: int
+            :param epochs: number of iterations of training
+            :type epochs: int
             :param smiles: list of smiles strings from which to learn
             :type smiles: list of strings
             """
 
         super(Model_2, self).__init__(tensorboard, hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2,
-                                     batch_size, nb_epochs, smiles, learning_rate)
+                                     batch_size, epochs, smiles, learning_rate)
 
         if not isinstance(self.smiles, type(None)):
             self.X_hot, self.y_hot = self._hot_encode_fitting(smiles)
