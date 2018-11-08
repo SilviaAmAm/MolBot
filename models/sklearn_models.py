@@ -8,7 +8,6 @@ from keras.callbacks import TensorBoard
 from keras.layers import Lambda
 from keras.models import load_model
 import keras.backend as K
-import copy
 from random import  shuffle
 import numpy as np
 import re
@@ -1182,12 +1181,9 @@ class Model_2(_Model):
         # Keeping a model for the 'prior' and making an 'agent' model where one can differentiate the new cost function with respect to the weights
         if utils.is_none(self.model):
             model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
-            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
+            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)    # Note: self.loaded_model will be modified as it is the same object as model_agent
         else:
-            self.save("prior_model")
-            self.load("prior_model")
-            model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
-            model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)
+            raise NotImplementedError
 
         # Making the Reinforcement Learning training function
         training_function = self._generate_rl_training_fn(model_agent)
@@ -1197,7 +1193,6 @@ class Model_2(_Model):
         experience = []
         rewards = []
 
-        #TODO understand if modifying the model after generating the RL function is a problem
         # This generates some episodes
         for ep in range(int(n_train_episodes/10)):
 
