@@ -142,7 +142,7 @@ def test_resume():
     correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
                       "O=C(C)Oc1ccccc1C(=O)O"]
 
-    estimator = sm.Model_1(window_length=15, nb_epochs=3)
+    estimator = sm.Model_1(window_length=15, epochs=3)
     estimator.fit(correct_smiles)
     estimator.predict(correct_smiles[:2])
     estimator.fit(correct_smiles)
@@ -151,28 +151,28 @@ def test_save():
     correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
                       "O=C(C)Oc1ccccc1C(=O)O"]
 
-    estimator = sm.Model_1(window_length=15, nb_epochs=3)
+    estimator = sm.Model_1(window_length=15, epochs=3)
     estimator.fit(correct_smiles)
-    estimator.save(filename="temp.h5")
+    estimator.save(filename="temp")
 
 def test_reload_predict():
     correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
                       "O=C(C)Oc1ccccc1C(=O)O"]
 
-    estimator = sm.Model_1(window_length=15, nb_epochs=3)
-    estimator.load(filename="temp.h5")
+    estimator = sm.Model_1(window_length=15, epochs=3)
+    estimator.load(filename="temp")
     estimator.predict([correct_smiles[0]])
 
 def test_reload_fit():
     correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
                       "O=C(C)Oc1ccccc1C(=O)O"]
 
-    estimator = sm.Model_1(window_length=15, nb_epochs=3)
-    estimator.load(filename="temp.h5")
+    estimator = sm.Model_1(window_length=15, epochs=3)
+    estimator.load(filename="temp")
     estimator.fit(correct_smiles)
 
     os.remove("temp.h5")
-    os.remove("idx_dict.pickle")
+    os.remove("temp.pickle")
 
 if __name__ == "__main__":
     test_set_tb()
