@@ -261,6 +261,17 @@ def test_reload_predict():
     estimator = sm.Model_2(epochs=3)
     estimator.load(filename="temp")
     estimator.predict()
+    estimator.predict(correct_smiles, frag_length=5)
+
+def test_rl():
+    correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
+                      "O=C(C)Oc1ccccc1C(=O)O"]
+
+    estimator = sm.Model_2(epochs=3)
+    estimator.load(filename="temp")
+    estimator.fit_with_rl(temperature=0.75, n_train_episodes=3)
+    estimator.predict()
+    estimator.predict(correct_smiles, frag_length=5)
 
 def test_reload_fit():
     correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
@@ -274,16 +285,17 @@ def test_reload_fit():
     os.remove("temp.pickle")
 
 if __name__ == "__main__":
-    # test_set_tb()
-    # test_hidden_neurons()
-    # test_set_dropout()
-    # test_check_smiles()
-    # test_initialise_data_fit()
+    test_set_tb()
+    test_hidden_neurons()
+    test_set_dropout()
+    test_check_smiles()
+    test_initialise_data_fit()
     test_initialise_data_predict()
-    # test_fit()
-    # test_predict()
-    # test_score()
-    # test_resume()
-    # test_save()
-    # test_reload_predict()
-    # test_reload_fit()
+    test_fit()
+    test_predict()
+    test_score()
+    test_resume()
+    test_save()
+    test_reload_predict()
+    test_rl()
+    test_reload_fit()

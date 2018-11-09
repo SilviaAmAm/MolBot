@@ -230,13 +230,31 @@ class _Model(BaseEstimator):
         :type n_train_episodes: positive int
         :param temperature: Temperature factor in the softmax
         :type temperature: positive float
-        :param max_length: maximum length of an episode
+        :param max_length: maximum length of an episode (how long can a string be)
         :type max_length: int
         :return: None
         """
 
+        # Checking the inputs
         if utils.is_none(self.model) and utils.is_none(self.loaded_model):
             raise utils.InputError("Fit with reinforcement learning can only be called after the model has been trained.")
+
+        try:
+            n_train_episodes = int(n_train_episodes)
+            if n_train_episodes <= 0:
+                raise utils.InputError(
+                    "The number of training episodes should be an positive non zero integer. Got %s" % str(n_train_episodes))
+        except ValueError:
+            raise utils.InputError("The number of training episodes should be an int. Got %s" % str(n_train_episodes))
+
+        try:
+            max_length = int(max_length)
+            if max_length <= 0:
+                raise utils.InputError(
+                    "The max length of a smile should be an positive non zero integer. Got %s" % str(
+                        max_length))
+        except ValueError:
+            raise utils.InputError("The max length of a smile should be an int. Got %s" % str(max_length))
 
         self._fit_with_rl(n_train_episodes, temperature, max_length)
 
