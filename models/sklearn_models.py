@@ -222,7 +222,7 @@ class _Model(BaseEstimator):
         else:
             raise utils.InputError("No model has been fit already or has been loaded.")
 
-    def fit_with_rl(self, n_train_episodes=10, temperature=1.0, max_length=100):
+    def fit_with_rl(self, n_train_episodes=10, temperature=1.0, max_length=100, sigma=60, lr=0.0005):
         """
         This function fits the model using reinforcement learning.
 
@@ -232,6 +232,10 @@ class _Model(BaseEstimator):
         :type temperature: positive float
         :param max_length: maximum length of an episode (how long can a string be)
         :type max_length: int
+        :param sigma: parameter that controls how to weight the desirability of a sequence. Explanation https://jcheminf.biomedcentral.com/track/pdf/10.1186/s13321-017-0235-x equation on bottom right of page 4
+        :type sigma: float
+        :param lr: learning rate for optimiser in the reinforcement learning algorithm
+        :type lr: positive float
         :return: None
         """
 
@@ -256,14 +260,30 @@ class _Model(BaseEstimator):
         except ValueError:
             raise utils.InputError("The max length of a smile should be an int. Got %s" % str(max_length))
 
-        self._fit_with_rl(n_train_episodes, temperature, max_length)
+        try:
+            sigma = float(sigma)
+        except ValueError:
+            raise utils.InputError("Sigma should be a float. Got %s" % str(sigma))
 
-    def _generate_rl_training_fn(self, model_agent):
+        try:
+            lr = float(lr)
+            if lr <= 0:
+                raise utils.InputError("The learning rate should be a positive non zero float. Got %s" % str(lr))
+        except ValueError:
+            raise utils.InputError("The learning rate should be a float. Got %s" % str(lr))
+
+        self._fit_with_rl(n_train_episodes, temperature, max_length, sigma, lr)
+
+    def _generate_rl_training_fn(self, model_agent, sigma, lr):
         """
         This function extends the model so that Reinforcement Learning can be done.
 
         :param temperature: the temperature of the softmax parameter
         :type temperature: positive float
+        :param sigma: parameter that controls how to weight the desirability of a sequence. Explanation https://jcheminf.biomedcentral.com/track/pdf/10.1186/s13321-017-0235-x equation on bottom right of page 4
+        :type sigma: float
+        :param lr: learning rate for optimiser in the reinforcement learning algorithm
+        :type lr: positive float
         :return: the model and the training function
         :rtype: a keras object and a keras function
         """
@@ -286,15 +306,15 @@ class _Model(BaseEstimator):
         reward_placeholder = K.placeholder(shape=(None,), name="reward")
 
         # Augmented log-likelihood: prior log lokelihood + sigma * desirability of the sequence
-        sigma = K.constant(60)
+        sigma_k = K.constant(sigma)
         desirability = reward_placeholder
-        augmented_likelihood = prior_loglikelihood + sigma * desirability
+        augmented_likelihood = prior_loglikelihood + sigma_k * desirability
 
         # Loss function
         loss = K.pow(augmented_likelihood - agent_loglikelihood, 2)
 
         # Optimiser and updates
-        optimiser = optimizers.Adam(lr=0.0005, clipnorm=3.0)
+        optimiser = optimizers.Adam(lr=lr, clipnorm=3.0)
         updates = optimiser.get_updates(params=model_agent.trainable_weights, loss=loss)
 
         rl_training_function = K.function(inputs=[hot_encoded_sequence, prior_loglikelihood, reward_placeholder],
@@ -1185,7 +1205,7 @@ class Model_2(_Model):
             else:
                 return all_predictions
 
-    def _fit_with_rl(self, n_train_episodes, temperature, max_length):
+    def _fit_with_rl(self, n_train_episodes, temperature, max_length, sigma, lr):
         """
         This function fits the model using reinforcement learning.
 
@@ -1193,8 +1213,11 @@ class Model_2(_Model):
         :type temperature: positive float
         :param max_length: maximum length of an episode
         :type max_length: int
-        :return:
-        :rtype:
+        :param sigma: parameter that controls how to weight the desirability of a sequence. Explanation https://jcheminf.biomedcentral.com/track/pdf/10.1186/s13321-017-0235-x equation on bottom right of page 4
+        :type sigma: float
+        :param lr: learning rate for optimiser in the reinforcement learning algorithm
+        :type lr: positive float
+        :return: None
         """
 
         # Keeping a model for the 'prior' and making an 'agent' model where one can differentiate the new cost function with respect to the weights
@@ -1202,10 +1225,12 @@ class Model_2(_Model):
             model_prior = self._modify_model_for_predictions(self.loaded_prior, temperature)
             model_agent = self._modify_model_for_predictions(self.loaded_model, temperature)    # Note: self.loaded_model will be modified as it is the same object as model_agent
         else:
+            # TODO implement reinforcement learning without reloading
+            # This requires to be able to make a deep copy of the model or to save it and then reload it
             raise NotImplementedError
 
         # Making the Reinforcement Learning training function
-        training_function = self._generate_rl_training_fn(model_agent)
+        training_function = self._generate_rl_training_fn(model_agent, sigma, lr)
 
         # The training function takes as arguments: the state, the action and the reward.
         # These have to be calculated in advance and stored.
