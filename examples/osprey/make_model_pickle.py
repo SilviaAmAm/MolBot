@@ -1,12 +1,14 @@
-import sys
-sys.path.append('/Volumes/Transcend/repositories/NovaData/models/')
-import sklearn_models
+"""
+This script shows how to prepare a pickled model to be used with Osprey.
+"""
+
+from models import sklearn_models
 import pickle
-import numpy as np
+import os
 
-# making dataset
-in_d = open("/Volumes/Transcend/repositories/NovaData/data/bioactivity_PPARg_filtered.csv", 'r')
-
+# Reading the data
+current_dir = os.path.dirname(os.path.realpath(__file__))
+in_d = open(current_dir + "/../../data/bioactivity_PPARg_filtered.csv", 'r')
 molecules = []
 
 for line in in_d:
@@ -18,15 +20,13 @@ for line in in_d:
     else:
         molecules.append(molecule)
 
-# mol_array = np.asarray(molecules)
+# Creating the model and saving the smiles in the model
+estimator = sklearn_models.Model_1(epochs=1, batch_size=1000 , smiles=molecules)
 
-estimator = sklearn_models.Model_1(nb_epochs=1, batch_size=1000 ,smiles=molecules)
-
+# Creating the pickle
 pickle.dump(estimator, open('model.pickle', 'wb'))
 
-
-# print(estimator.stored_data.shape)
-
+# Creating a list of indices that Osprey will use to refer to the samples
 with open('idx.csv', 'w') as f:
     for i in range(len(molecules)):
         f.write('%s\n' % i)

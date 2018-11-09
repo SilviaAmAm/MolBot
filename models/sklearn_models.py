@@ -13,7 +13,7 @@ import numpy as np
 import re
 import pickle
 from sklearn.base import BaseEstimator
-import utils
+from . import utils
 import sklearn.model_selection as modsel
 import random
 

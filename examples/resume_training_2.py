@@ -1,10 +1,13 @@
-import sys
-sys.path.append('/Volumes/Transcend/repositories/NovaData/models/')
-import sklearn_models
-import numpy as np
-import time
+"""
+This example shows how to reload a previously saved model and carrying on fitting. It requires having run the script
+ex_model_2.py first.
+"""
+from models import sklearn_models
+import os
 
-in_d = open("/Volumes/Transcend/repositories/NovaData/data/bioactivity_PPARg_filtered.csv", 'r')
+# Reading the data
+current_dir = os.path.dirname(os.path.realpath(__file__))
+in_d = open(current_dir + "/../data/bioactivity_PPARg_filtered.csv", 'r')
 
 molecules = []
 
@@ -17,12 +20,11 @@ for line in in_d:
     else:
         molecules.append(molecule)
 
-estimator = sklearn_models.Model_2(nb_epochs=1, smiles=molecules)
+# Creating the model
+estimator = sklearn_models.Model_2(epochs=3, batch_size=20)
 
+# Reloading the model
+estimator.load("example-save")
 
-estimator.fit(list(range(100)))
-
-estimator.save()
-
-estimator.load("model.h5")
-estimator.fit(list(range(100)))
+# Carrying on fitting the model that was previously saved
+estimator.fit(molecules[:100])

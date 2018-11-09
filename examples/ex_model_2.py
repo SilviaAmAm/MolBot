@@ -1,8 +1,14 @@
-import sys
-sys.path.append('/Volumes/Transcend/repositories/NovaData/models/')
-import sklearn_models
+"""
+This example shows how to train Model 2 on a set of smiles, how to predict new smiles with the trained model and how to
+score the predictions and assess their Tanimoto similarity to the original molecules in the training set.
+"""
 
-in_d = open("/Volumes/Transcend/repositories/NovaData/data/bioactivity_PPARg_filtered.csv", 'r')
+from models import sklearn_models
+import os
+
+# Reading the data
+current_dir = os.path.dirname(os.path.realpath(__file__))
+in_d = open(current_dir + "/../data/bioactivity_PPARg_filtered.csv", 'r')
 
 molecules = []
 
@@ -15,18 +21,26 @@ for line in in_d:
     else:
         molecules.append(molecule)
 
-estimator = sklearn_models.Model_2(nb_epochs=1)
+# Creating the model
+estimator = sklearn_models.Model_2(epochs=3, batch_size=20)
 
-estimator.fit(molecules[:4])
+# Training the model on 100 molecules from the data set
+estimator.fit(molecules[:100])
 
-predictions = estimator.predict(molecules[:4])
+# Predicting 10 new molecules from the fitted model at a temperature of 0.75
+predictions = []
+for a in range(10):
+    p = estimator.predict(temperature=0.75)
+    predictions.append(p[0])
 
-score = estimator.score(molecules[:4])
+# Saving the estimator for later re-use
+estimator.save("example-save")
 
-print(predictions)
+# Scoring some predictions based on the percenatge of valid smiles. This requires RDKit
+score = estimator.score(molecules[:10])
+print("The score obtained on the predictions is %s." % str(score))
 
-f = open("/Volumes/Transcend/repositories/NovaData/pred_smiles/pred_smiles_2.txt", 'w')
+# Scoring the Tanimoto similarity of the predictions to the training set. This requires RDKit
+tanimoto = estimator.score_similarity(predictions, molecules[:100])
+print("The Tanimoto similarity between the predictions and the training set is %s." % str(tanimoto))
 
-for i in range(4):
-    f.write('%100s  %100s' % (molecules[i], predictions[i]))
-    f.write("\n")

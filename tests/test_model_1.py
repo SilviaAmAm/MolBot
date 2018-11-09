@@ -1,4 +1,4 @@
-import sklearn_models as sm
+from models import sklearn_models as sm
 import os
 
 def test_set_tb():
@@ -128,15 +128,21 @@ def test_score():
     estimator.fit(correct_idx)
     pred_1 = estimator.predict(correct_idx)
     estimator._check_smiles(pred_1)
-    score = estimator.score(correct_idx)
-    assert score >= 0
+    try:
+        score = estimator.score(correct_idx)
+        assert score >= 0
+    except ModuleNotFoundError:
+        print("Test_score aborted since RDKit is not installed.")
 
     estimator = sm.Model_1()
     estimator.fit(correct_smiles)
     pred_2 = estimator.predict(correct_smiles)
     estimator._check_smiles(pred_2)
-    score = estimator.score(correct_smiles)
-    assert score >= 0
+    try:
+        score = estimator.score(correct_smiles)
+        assert score >= 0
+    except ModuleNotFoundError:
+        print("Test_score aborted since RDKit is not installed.")
 
 def test_resume():
     correct_smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
