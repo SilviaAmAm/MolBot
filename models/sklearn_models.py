@@ -953,6 +953,7 @@ class Model_2(_Model):
             output_sequence = np.zeros((max_size, n_feat))
             for j in range(max_size - 1):
                 output_sequence[j][sample_idx[j + 1]] = 1.0
+            output_sequence[-1][self.char_to_idx["A"]] = 1.0
             y_hot[n] = output_sequence
 
         return X_hot, y_hot
