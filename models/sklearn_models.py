@@ -343,7 +343,9 @@ class _Model(BaseEstimator):
 
         TPSA = Descriptors.TPSA(m)
 
-        return TPSA
+        reward = (TPSA - 105)**2 + 50
+
+        return reward
 
     def predict(self, X=None, frag_length=5, temperature=1.0, max_length=100):
         """
