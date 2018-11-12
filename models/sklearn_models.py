@@ -343,7 +343,8 @@ class _Model(BaseEstimator):
 
         TPSA = Descriptors.TPSA(m)
 
-        reward = (TPSA - 105)**2 + 50
+        # To obtain molecules mostly with polarity between 90 and 120
+        reward = np.exp(-(TPSA-105)**2)
 
         return reward
 
