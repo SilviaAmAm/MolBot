@@ -1,6 +1,7 @@
 .idea/
 *.npy
 *.pickle
+*.h5
 *.db
 build/
 docs/build/

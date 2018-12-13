@@ -36,11 +36,3 @@ for a in range(10):
 # Saving the estimator for later re-use
 estimator.save("example-save")
 
-# Scoring some predictions based on the percenatge of valid smiles. This requires RDKit
-score = estimator.score(molecules[:10])
-print("The score obtained on the predictions is %s." % str(score))
-
-# Scoring the Tanimoto similarity of the predictions to the training set. This requires RDKit
-tanimoto = estimator.score_similarity(predictions, molecules[:100])
-print("The Tanimoto similarity between the predictions and the training set is %s." % str(tanimoto))
-
