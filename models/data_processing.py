@@ -1,6 +1,6 @@
 import numpy as np
 
-def onehot_encode(molecules, debug=0):
+def onehot_encode(molecules, debug=False):
     """
     This function takes the unpadded SMILES strings and returns the padded SMILES in one-hot encoding form.
 
