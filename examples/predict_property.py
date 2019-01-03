@@ -1,5 +1,5 @@
 """
-This script is an example of how to train the properties predictor model.
+This script is an example of how to overfit a model to 100 samples.
 """
 
 import numpy as np
@@ -50,15 +50,12 @@ dropout_1 = 1.0
 dropout_2 = 1.0
 learning_rate = 0.0075
 batch_size = 10
-epochs = 2000
+epochs = 1000
 
 
 estimator = properties_pred.Properties_predictor(hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2, learning_rate, batch_size, epochs)
 estimator.fit(X_train[idx], y_train[idx])
 y_pred = estimator.predict(X_train[idx])
-
-print(y_pred)
-
 
 # pickle.dump(estimator, open('model.pickle', 'wb'))
 #

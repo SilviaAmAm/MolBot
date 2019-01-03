@@ -1,32 +1,40 @@
-"""
-This script shows how to prepare a pickled model to be used with Osprey.
-"""
-
-from models import sklearn_models
 import pickle
-import os
+import numpy as np
+from models import properties_pred, data_processing
+from sklearn import preprocessing
+from sklearn.pipeline import Pipeline
 
-# Reading the data
-current_dir = os.path.dirname(os.path.realpath(__file__))
-in_d = open(current_dir + "/../../data/bioactivity_PPARg_filtered.csv", 'r')
+
+# Getting the data
+data_file = "/home/sa16246/data_sets/Novadata/TyrosineproteinkinaseJAK2.csv"
+# data_file = "/Volumes/Transcend/PhD/NovaData_solutions/dataset/TyrosineproteinkinaseJAK2.csv"
+in_d = open(data_file, "r")
+
+# Read molecules and activities from CSV file
 molecules = []
+activities = []
 
 for line in in_d:
+    line = line.rstrip()
     line_split = line.split(",")
-    molecule_raw = line_split[-3]
+    molecule_raw = line_split[-1]
+    activity = line_split[53]
     molecule = molecule_raw[1:-1]
-    if molecule == "CANONICAL_SMILES":
+    if molecule == "SMI (Canonical)":
         pass
     else:
         molecules.append(molecule)
+        activities.append(float(activity))
+activities = np.asarray(activities)
 
-# Creating the model and saving the smiles in the model
-estimator = sklearn_models.Model_1(epochs=1, batch_size=1000 , smiles=molecules)
+# Processing the data
+X, y = data_processing.string_to_int(molecules), activities
 
-# Creating the pickle
+scaler = preprocessing.StandardScaler(with_mean=True, with_std=False)
+estimator = properties_pred.Properties_predictor()
+
+pl = Pipeline(steps=[('scaling', scaler), ('nn', estimator)])
+
 pickle.dump(estimator, open('model.pickle', 'wb'))
 
-# Creating a list of indices that Osprey will use to refer to the samples
-with open('idx.csv', 'w') as f:
-    for i in range(len(molecules)):
-        f.write('%s\n' % i)
+pickle.dump({"X":X, "y":y}, open('tpsa.pickle', 'wb'))
