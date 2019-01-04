@@ -72,7 +72,6 @@ def is_positive_integer_or_zero_array(x):
 def ceil(a, b):
     """
     Returns a/b rounded up to nearest integer.
-
     """
     return -(-a//b)
 
