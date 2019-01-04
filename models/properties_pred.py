@@ -1,5 +1,5 @@
 """
-This module contains the model that is used to predict the activity from SMILES strings
+This module contains the model that is used to predict molecular properties from SMILES strings
 """
 
 import keras
@@ -11,7 +11,7 @@ import sklearn.model_selection as modsel
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn import __version__
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_absolute_error
 
 import tempfile
 import warnings

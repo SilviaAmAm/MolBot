@@ -15,7 +15,7 @@ class Molecules_processing():
         # Size of largest molecule
         self.max_size = 0
 
-    def onehot_encode(self, molecules, debug=False):
+    def onehot_encode(self, molecules):
         """
         This function takes the unpadded SMILES strings and returns the padded SMILES in one-hot encoding form.
 
@@ -46,24 +46,19 @@ class Molecules_processing():
                 print("One of the molecules contains a character that was not present in the first round of training.")
                 exit()
 
-        if debug:
-            assert self.check_onehot_encoding(hot_molecules, molecules)
-
         return hot_molecules
 
-    def check_onehot_encoding(self, hot_molecules, molecules):
+    def onehot_decode(self, hot_molecules):
         """
-        This function takes in some one hot encoded padded SMILES and the original SMILES strings. It decodes the one-hot
-        encoded SMILES and compares them to the original molecules. If they are the same it returns TRUE, otherwise FALSE.
+        This function takes in some one-hot encoded padded SMILES and returns a list of unpadded SMILES strings.
 
         :param hot_molecules: one-hot encoded SMILES
         :type hot_molecules: np array of shape (n_samples, max_str_len, n_characters)
-        :param molecules: unpadded SMILES strings
-        :type molecules: list of strings
-        :param idx_to_char: dictionary mapping indices to characters
-        :type idx_to_char: dictionary
-        :return: bool
+        :return: unpadded SMILES strings
+        :rtype: list of strings
         """
+
+        molecules = []
 
         for i in range(len(hot_molecules)):
             # One hot decodeing each molecule one at a time
@@ -71,12 +66,13 @@ class Molecules_processing():
             for j in range(len(hot_molecules[i])):
                 mol += self.idx_to_char[np.argmax(hot_molecules[i][j])]
             # Unpadding
-            e_idx = mol.index("E")
-            mol = mol[1:e_idx]
-            if mol != molecules[i]:
-                return False
+            try:
+                e_idx = mol.index("E")
+                molecules.append(mol[1:e_idx])
+            except ValueError:
+                molecules.append(mol)
 
-        return True
+        return molecules
 
     def string_to_int(self, molecules):
         """

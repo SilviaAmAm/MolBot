@@ -35,7 +35,8 @@ for line in in_d:
 activities = np.asarray(activities)
 
 # Processing the data
-X, y = data_processing.string_to_int(molecules), activities
+dh = data_processing.Molecules_processing()
+X, y = dh.string_to_int(molecules), activities
 X_train, X_test, y_train, y_test = modsel.train_test_split(X, y, test_size=0.1, shuffle=True)
 idx = list(range(100))
 
@@ -52,15 +53,9 @@ learning_rate = 0.0075
 batch_size = 10
 epochs = 1000
 
-
 estimator = properties_pred.Properties_predictor(hidden_neurons_1, hidden_neurons_2, dropout_1, dropout_2, learning_rate, batch_size, epochs)
 estimator.fit(X_train[idx], y_train[idx])
 y_pred = estimator.predict(X_train[idx])
-
-# pickle.dump(estimator, open('model.pickle', 'wb'))
-#
-# del estimator
-# estimator_new = pickle.load(open("model.pickle",'rb'))
 
 # Plot correlation
 plt.scatter(y_train[idx], y_pred)

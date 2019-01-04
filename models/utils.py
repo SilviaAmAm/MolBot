@@ -143,14 +143,8 @@ def set_learning_rate(lr):
     :type: float > 0
     :return: approved learning rate
     """
-
-    if isinstance(lr, (float, int)):
-        if lr > 0.0:
-            return lr
-        else:
-            raise InputError("The learning rate should be larger than 0.")
-    else:
-        raise InputError("The learning rate should be number larger than 0.")
+    check_lr(lr)
+    return lr
 
 def check_X_y(X, y):
     """
@@ -199,3 +193,20 @@ def check_maxlength(ml):
     """
     if not isinstance(ml, type(int)) and ml <= 0:
         raise ValueError("The length of the predicted strings should be an integer larger than 0.")
+
+def check_ep(ep):
+    if not is_positive_integer(ep):
+        raise InputError("The number of episodes should be a positive integer. Got %s." % (str(ep)))
+
+def check_lr(lr):
+    if isinstance(lr, (float, int)):
+        if lr < 0.0:
+            raise InputError("The learning rate should be larger than 0.")
+    else:
+        raise InputError("The learning rate should be number larger than 0.")
+
+def check_sigma(sigma):
+    try:
+        sigma = float(sigma)
+    except ValueError:
+        raise InputError("Sigma should be a float. Got %s" % str(sigma))

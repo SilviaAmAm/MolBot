@@ -22,7 +22,12 @@ def test_onehot_encode():
 
     molecules = _get_data()
 
-    data_processing.onehot_encode(molecules, debug=True)
+    data_handler = data_processing.Molecules_processing()
+    hot_mols = data_handler.onehot_encode(molecules)
+    mols = data_handler.onehot_decode(hot_mols)
+
+    for i in range(len(molecules)):
+        assert molecules[i] == mols[i]
 
 if __name__ == "__main__":
     test_onehot_encode()
