@@ -344,7 +344,7 @@ class Smiles_generator(BaseEstimator):
 
             # Slow step
             for j in range(n_samples):
-                idx_out = np.random.choice(np.arange(n_feat), p=prob_distribution[j, 0])
+                idx_out = np.random.choice(np.arange(n_feat), p=prob_distribution[j, -1])
                 X_pred[j, i, idx_out] = 1
 
         return X_pred
