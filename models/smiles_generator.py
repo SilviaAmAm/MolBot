@@ -181,7 +181,7 @@ class Smiles_generator(BaseEstimator):
                     print("No valid smiles were generated in this epoch.")
                     pass
 
-    def predict(self, X, temperature=1.0, max_length=100):
+    def predict(self, X, temperature=1.0, max_length=200):
         """
         This function starts from a hot encoded SMILES and predicts the remaining part of the molecule. X needs to
         at least contain a 'G' character, it cannot be empty.
@@ -376,35 +376,40 @@ class Smiles_generator(BaseEstimator):
         # Calculate the sequence log-likelihood for the prior
         prior_action_prob = model_prior.predict(hot_pred)
         individual_action_probability = np.sum(np.multiply(hot_pred[:, 1:], prior_action_prob[:, :-1]), axis=-1)
-        prod_individual_action_prob = np.prod(individual_action_probability)
+        prod_individual_action_prob = np.prod(individual_action_probability, axis=-1)
         sequence_log_likelihood = np.log(prod_individual_action_prob)
 
         # Calculate the reward for the finished smile
         smiles_predictions = data_handler.onehot_decode(hot_pred)
-        new_rewards = self._calculate_reward(smiles_predictions)
+        new_rewards, idx_invalid = self._calculate_reward(smiles_predictions)
 
-        if set(new_rewards) == {None}:
+        if len(new_rewards) == 0:
             return experience, rewards
 
         # Remove all invalid smiles
         try:
-            idx_notnone = np.where(new_rewards != None)[0]
-            hot_pred = np.delete(hot_pred, idx_notnone, axis=0)
-            sequence_log_likelihood = np.delete(sequence_log_likelihood, idx_notnone, axis=0)
-            new_rewards = np.delete(new_rewards, idx_notnone, axis=0)
+            hot_pred = np.delete(hot_pred, idx_invalid, axis=0)
+            sequence_log_likelihood = np.delete(sequence_log_likelihood, idx_invalid, axis=0)
+            assert hot_pred.shape[0] == len(new_rewards)
+            assert sequence_log_likelihood.shape[0] == len(new_rewards)
         except ValueError:
             pass
 
         # If the experience buffer is not full, add as many are needed
         if len(experience) < n_episodes:
+
+            # Sort in order of increaseing reward
+            idx_sorted = np.argsort(new_rewards)
+            hot_pred = hot_pred[idx_sorted]
+            sequence_log_likelihood = sequence_log_likelihood[idx_sorted]
+            new_rewards = np.asarray(new_rewards)[idx_sorted]
+
+            # Append the smiles with largest reward first
             for n_ep in range(n_episodes-len(experience)):
-                # Sort in order of increaseing reward
-                idx_sorted = np.argsort(new_rewards)
-                hot_pred = hot_pred[idx_sorted]
-                sequence_log_likelihood = sequence_log_likelihood[idx_sorted]
-                new_rewards = new_rewards[idx_sorted]
-                # Append the smiles with largest reward first
-                experience.append((hot_pred[-(n_ep+1)], sequence_log_likelihood[-(n_ep+1)], new_rewards[-(n_ep+1)]))
+                if n_ep+1 > len(new_rewards):
+                    break
+                expanded_hot_pred = np.expand_dims(hot_pred[-(n_ep+1)], axis=0)
+                experience.append((expanded_hot_pred, sequence_log_likelihood[-(n_ep+1)], new_rewards[-(n_ep+1)]))
                 rewards.append(new_rewards[-(n_ep+1)])
         else:
             # If the minimum reward is smaller than the reward for the current smile, replace it
@@ -413,7 +418,8 @@ class Smiles_generator(BaseEstimator):
                 idx_to_add = np.argmax(new_rewards)
                 del experience[idx_to_pop]
                 del rewards[idx_to_pop]
-                experience.append((hot_pred[idx_to_add], sequence_log_likelihood[idx_to_add], new_rewards[idx_to_add]))
+                expanded_hot_pred = np.expand_dims(hot_pred[idx_to_add], axis=0)
+                experience.append((expanded_hot_pred, sequence_log_likelihood[idx_to_add], new_rewards[idx_to_add]))
                 rewards.append(new_rewards[idx_to_add])
                 hot_pred = np.delete(hot_pred, idx_to_add, axis=0)
                 sequence_log_likelihood = np.delete(sequence_log_likelihood, idx_to_add, axis=0)
@@ -423,12 +429,12 @@ class Smiles_generator(BaseEstimator):
 
     def _calculate_reward(self, X_strings):
         """
-        This function calculates the reward for a particular molecule.
+        This function calculates the reward for a list of molecules.
 
         :param X_strings: SMILES strings
         :type X_string: list of strings
-        :return: the rewards
-        :rtype: list of float
+        :return: the valid smiles and the rewards and the index of any invalid smiles
+        :rtype: list of float, lixt of int
         """
 
         from rdkit.Chem import Descriptors, MolFromSmiles
@@ -436,15 +442,17 @@ class Smiles_generator(BaseEstimator):
         rdBase.DisableLog('rdApp.error')
 
         rewards = []
-        for x_string in X_strings:
+        idx_invalid_smiles = []
+
+        for i, x_string in enumerate(X_strings):
             if len(x_string) == 0:
-                rewards.append(None)
+                idx_invalid_smiles.append(i)
                 continue
             m = MolFromSmiles(x_string)
 
             # If the predicted smiles is invalid, give no reward
             if utils.is_none(m):
-                rewards.append(None)
+                idx_invalid_smiles.append(i)
                 continue
 
             TPSA = Descriptors.TPSA(m)
@@ -452,7 +460,7 @@ class Smiles_generator(BaseEstimator):
             # To obtain molecules mostly with polarity between 90 and 120
             rewards.append(np.exp(-(TPSA - 105) ** 2))
 
-        return rewards
+        return rewards, idx_invalid_smiles
 
 if __name__ == "__main__":
 
