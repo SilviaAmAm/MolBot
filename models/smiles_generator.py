@@ -370,7 +370,7 @@ class Smiles_generator(BaseEstimator):
         """
 
         # Using the agent network to predict a smile
-        X = data_handler.get_empty(n_episodes)
+        X = data_handler.get_empty(n_episodes*2)
         hot_pred = self._pred(X=X, model=model_agent, max_length=data_handler.max_size)
 
         # Calculate the sequence log-likelihood for the prior

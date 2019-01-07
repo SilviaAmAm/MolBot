@@ -17,6 +17,7 @@ In order to use this package, you need the following packages installed:
 - scikit-learn (0.19.1 or higher)
 - tensorflow (1.9.0 or higher) or tensorflow-gpu (1.9.0 or higher)
 - keras (2.2.0 or higher)
+- (optional) rdkit
 
 In addition, some functionality requires RDkit, but it is not essential.
 
