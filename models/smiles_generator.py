@@ -99,10 +99,10 @@ class Smiles_generator(BaseEstimator):
 
         # If there are enough samples, use some as validation data
         if X.shape[0] >= 20:
-            X_train, X_val, y_train, y_val = modsel.train_test_split(X, y, test_size=0.05)
+            train_idx = int(0.95*X.shape[0])
 
-            model.fit(X_train, y_train, batch_size=batch_size, verbose=1, epochs=self.epochs,
-                        callbacks=callbacks_list, validation_data=(X_val, y_val))
+            model.fit(X[:train_idx], y[:train_idx], batch_size=batch_size, verbose=1, epochs=self.epochs,
+                        callbacks=callbacks_list, validation_data=(X[train_idx:], y[train_idx:]))
         else:
             model.fit(X, y, batch_size=batch_size, verbose=1, epochs=self.epochs, callbacks=callbacks_list)
 
