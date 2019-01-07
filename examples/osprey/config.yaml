@@ -52,10 +52,10 @@ cv:
 dataset_loader:
   name: joblib
   params:
-    filenames: tpsa.pickle
+    filenames: activity.pickle
     x_name: X
     y_name: y
 
 trials:
-    uri: sqlite:///tpsa.db
+    uri: sqlite:///activity.db
 
