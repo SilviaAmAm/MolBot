@@ -3,6 +3,7 @@ This module contains a class that turns SMILES into one-hot encoded arrays and v
 """
 
 import numpy as np
+import pickle
 
 class Molecules_processing():
 
@@ -86,7 +87,9 @@ class Molecules_processing():
         """
 
         # Padding the molecules and finding all the unique characters
-        self.max_size = len(max(molecules, key=len)) + 2  # Length of longest molecule
+        if self.max_size == 0:
+            self.max_size = len(max(molecules, key=len)) + 2  # Length of longest molecule
+
         padded_molecules = np.tile(np.array('A'), (len(molecules), self.max_size))  # Molecules padded with G, E and A
 
         for i in range(len(molecules)):
@@ -95,8 +98,9 @@ class Molecules_processing():
 
         # Indices of characters so that they can be translated into numbers
         all_possible_char = np.unique(padded_molecules)
-        self.char_to_idx = {char: idx for idx, char in enumerate(all_possible_char)}
-        self.idx_to_char = {idx: char for idx, char in enumerate(all_possible_char)}
+        if len(self.char_to_idx) == 0:
+            self.char_to_idx = {char: idx for idx, char in enumerate(all_possible_char)}
+            self.idx_to_char = {idx: char for idx, char in enumerate(all_possible_char)}
 
         # Turn characters to int
         n_samples = padded_molecules.shape[0]
@@ -108,3 +112,29 @@ class Molecules_processing():
             int_molecules[n] = [self.char_to_idx[char] for char in sample]
 
         return int_molecules
+
+    def save(self, filename='data_proc'):
+        """
+        This function saves the data processing object so it can be used at al ater stage.
+        :param filename: name of the file in which to save the object.
+        :type filename: string
+        :return: None
+        """
+
+        dict_name = filename + ".pickle"
+        pickle.dump([self.char_to_idx, self.idx_to_char, self.max_size], open(dict_name, "wb"))
+
+    def load(self, filename='data_proc'):
+        """
+        This function reloads a previously defined Model_processing object.
+        :param filename: name of the file in which the object is saved.
+        :type filename: string
+        :return: None
+        """
+
+        dict_name = filename + ".pickle"
+
+        idx_dixt = pickle.load(open(dict_name, "rb"))
+        self.char_to_idx = idx_dixt[0]
+        self.idx_to_char = idx_dixt[1]
+        self.max_size = idx_dixt[2]
