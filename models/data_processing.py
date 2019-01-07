@@ -113,6 +113,21 @@ class Molecules_processing():
 
         return int_molecules
 
+    def get_empty(self, n):
+        """
+        This function outputs a one hot encoded G character.
+
+        :param n: number of empty one-hot encoded smiles to output
+        :return: numpy array of shape (n, 1, n_char)
+        """
+
+        empty_smiles = [""]*n
+
+        hot_empty = self.onehot_encode(empty_smiles)
+        trim_hot_empty = np.reshape(hot_empty[:, :1, :], (hot_empty[:, :1, :].shape[0], 1, hot_empty[:, :1, :].shape[-1]))
+
+        return trim_hot_empty
+
     def save(self, filename='data_proc'):
         """
         This function saves the data processing object so it can be used at al ater stage.

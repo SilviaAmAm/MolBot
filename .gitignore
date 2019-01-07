@@ -6,4 +6,7 @@
 build/
 docs/build/
 docs/source/examples/.ipynb_checkpoints/
-examples/osprey/idx.csv
+examples/tb/
+tests/tb/
+._*
+.pytest_cache/

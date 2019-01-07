@@ -5,9 +5,6 @@ import numpy as np
 import random
 
 from sklearn.base import BaseEstimator
-from sklearn.utils.validation import check_array, check_is_fitted
-from sklearn import __version__
-import sklearn.model_selection as modsel
 
 from keras import optimizers
 from keras import Sequential
@@ -119,7 +116,7 @@ class Smiles_generator(BaseEstimator):
 
         return self
 
-    def fit_with_rl(self, data_handler, epochs, n_train_episodes, temperature, max_length, sigma, rl_learning_rate):
+    def fit_with_rl(self, data_handler, epochs=5, n_train_episodes=15, temperature=0.75, sigma=60, rl_learning_rate=0.0005):
         """
         This function fits the model using reinforcement learning.
 
@@ -147,7 +144,6 @@ class Smiles_generator(BaseEstimator):
 
         utils.check_ep(n_train_episodes)
         utils.check_temperature(temperature)
-        utils.check_maxlength(max_length)
         utils.check_sigma(sigma)
         utils.check_lr(rl_learning_rate)
 
@@ -171,15 +167,19 @@ class Smiles_generator(BaseEstimator):
         for ep in range(epochs):
             # This generates some episodes (i.e. smiles)
             experience, rewards = self._rl_episodes(model_agent, model_prior, data_handler, n_train_episodes,
-                                                    max_length, experience, rewards)
+                                                    experience, rewards)
 
             for _ in range(10):
-                random_n = random.randint(0, len(experience)-1)
-                state = experience[random_n][0]
-                prior_loglikelihood = experience[random_n][1]
-                reward = experience[random_n][2]
+                try:
+                    random_n = random.randint(0, len(experience)-1)
+                    state = experience[random_n][0]
+                    prior_loglikelihood = experience[random_n][1]
+                    reward = experience[random_n][2]
 
-                training_function([state, prior_loglikelihood, reward])
+                    training_function([state, prior_loglikelihood, reward])
+                except ValueError:
+                    print("No valid smiles were generated in this epoch.")
+                    pass
 
     def predict(self, X, temperature=1.0, max_length=100):
         """
@@ -349,7 +349,7 @@ class Smiles_generator(BaseEstimator):
 
         return X_pred
 
-    def _rl_episodes(self, model_agent, model_prior, data_handler, n_episodes, max_length, experience, rewards):
+    def _rl_episodes(self, model_agent, model_prior, data_handler, n_episodes, experience, rewards):
         """
         This function takes generates new SMILES using the agent and then calculates their probability using the prior.
         It then calculates the reward of the generated SMILES and adds all information to the experience buffer.
@@ -370,8 +370,8 @@ class Smiles_generator(BaseEstimator):
         """
 
         # Using the agent network to predict a smile
-        X = data_handler.onehot_decode(["G"]*n_episodes)
-        hot_pred, exp = self._pred(X=X, model=model_agent, max_length=max_length)
+        X = data_handler.get_empty(n_episodes)
+        hot_pred = self._pred(X=X, model=model_agent, max_length=data_handler.max_size)
 
         # Calculate the sequence log-likelihood for the prior
         prior_action_prob = model_prior.predict(hot_pred)
@@ -383,9 +383,12 @@ class Smiles_generator(BaseEstimator):
         smiles_predictions = data_handler.onehot_decode(hot_pred)
         new_rewards = self._calculate_reward(smiles_predictions)
 
+        if set(new_rewards) == {None}:
+            return experience, rewards
+
         # Remove all invalid smiles
         try:
-            idx_notnone = np.where(new_rewards != None)
+            idx_notnone = np.where(new_rewards != None)[0]
             hot_pred = np.delete(hot_pred, idx_notnone, axis=0)
             sequence_log_likelihood = np.delete(sequence_log_likelihood, idx_notnone, axis=0)
             new_rewards = np.delete(new_rewards, idx_notnone, axis=0)
@@ -433,8 +436,11 @@ class Smiles_generator(BaseEstimator):
         rdBase.DisableLog('rdApp.error')
 
         rewards = []
-        for string in X_strings:
-            m = MolFromSmiles(string)
+        for x_string in X_strings:
+            if len(x_string) == 0:
+                rewards.append(None)
+                continue
+            m = MolFromSmiles(x_string)
 
             # If the predicted smiles is invalid, give no reward
             if utils.is_none(m):
