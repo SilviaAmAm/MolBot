@@ -1,3 +1,6 @@
+# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
 """
 This script is an example of how to overfit a model to 100 samples.
 """

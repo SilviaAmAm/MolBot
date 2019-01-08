@@ -1,3 +1,6 @@
+# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
 from models import data_processing, reinforcement_learning, rewards
 from random import shuffle
 

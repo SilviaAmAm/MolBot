@@ -1,3 +1,10 @@
+# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
+"""
+This module contains rewards functions that can be used in the reinforcement learning.
+"""
+
 import numpy as np
 
 from rdkit.Chem import Descriptors, MolFromSmiles

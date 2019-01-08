@@ -1,3 +1,6 @@
+# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
 """
 This module contains the model that is used to predict molecular properties from SMILES strings
 """

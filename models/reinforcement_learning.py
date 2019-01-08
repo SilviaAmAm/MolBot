@@ -1,3 +1,11 @@
+# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
+"""
+This module implements a class that can be used for reinforcement learning of the models from the Smiles_generator
+class.
+"""
+
 import keras.backend as K
 from keras import optimizers
 from keras.models import load_model

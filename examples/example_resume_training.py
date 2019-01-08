@@ -1,3 +1,6 @@
+# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
 """
 This example shows how to reload a previously saved model and carrying on fitting. It requires having run the script
 example_training.py first.

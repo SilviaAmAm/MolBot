@@ -1,3 +1,6 @@
+# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
 """
 This example shows how to train an RNN on a set of smiles and how to predict new smiles with the trained model.
 """

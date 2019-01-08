@@ -1,4 +1,8 @@
+# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
 import numpy as np
+
 from sklearn.utils.validation import check_array
 
 def is_array_like(x):
