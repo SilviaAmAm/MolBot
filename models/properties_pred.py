@@ -20,6 +20,24 @@ class Properties_predictor(BaseEstimator):
 
     def __init__(self, hidden_neurons_1=100, hidden_neurons_2=100, l1=0.0, l2=0.0, learning_rate=0.001, batch_size=20,
                  epochs=4):
+        """
+        Constructor for the Properties_predictor class.
+
+        :param hidden_neurons_1: Number of neurons in the first hidden layer
+        :type hidden_neurons_1: int
+        :param hidden_neurons_2: Number of neurons in the second hidden layer
+        :type hidden_neurons_2: int
+        :param l1: L1 regularisation parameter
+        :type l1: float
+        :param l2: L2 regularisation parameter
+        :type l2: float
+        :param learning_rate: learning rate for the optimisation algorithm
+        :type learning_rate: float
+        :param batch_size: size of the mini batches of data for the optimisation
+        :type batch_size: int
+        :param epochs: number of iterations of training
+        :type epochs: int
+        """
 
         self.hidden_neurons_1 = hidden_neurons_1
         self.hidden_neurons_2 = hidden_neurons_2
@@ -31,6 +49,15 @@ class Properties_predictor(BaseEstimator):
         self._n_feat = 0
 
     def fit(self, X, y):
+        """
+        This function fits a Feed Forward Neural Network to the data.
+
+        :param X: The training input samples
+        :type X: np array of shape (n_samples, n_feaures)
+        :param y: The target values
+        :type y: np array of shape (n_samples,)
+        :return: self object
+        """
 
         # Check the inputs
         X, y = check_X_y(X, y, accept_sparse=False)
@@ -57,6 +84,14 @@ class Properties_predictor(BaseEstimator):
         return self
 
     def predict(self, X):
+        """
+        Predicts the regression target for X.
+
+        :param X: The training input samples
+        :type X: np array of shape (n_samples, n_feaures)
+        :return: The target values
+        :rtype: np array of shape (n_samples,)
+        """
 
         X = check_array(X, accept_sparse=False)
         check_is_fitted(self, 'is_fitted_')
@@ -69,6 +104,16 @@ class Properties_predictor(BaseEstimator):
             return y_pred
 
     def score(self, X, y):
+        """
+        Returns a score. In this case the score is the negative mean absolute error.
+
+        :param X: The training input samples
+        :type X: np array of shape (n_samples, n_feaures)
+        :param y: The target values
+        :type y: np array of shape (n_samples,)
+        :return: the score
+        :rtype: float
+        """
 
         X, y = check_X_y(X, y, accept_sparse=False)
         X = check_array(X, accept_sparse=False)
@@ -80,6 +125,11 @@ class Properties_predictor(BaseEstimator):
         return mae
 
     def _build_model(self):
+        """
+        This function builds the Keras model
+
+        :return: keras model
+        """
 
         model = Sequential()
         model.add(Dense(self.hidden_neurons_1, input_dim=self._n_feat, activation='tanh',

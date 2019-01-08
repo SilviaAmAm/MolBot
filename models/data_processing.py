@@ -128,7 +128,7 @@ class Molecules_processing():
 
         return trim_hot_empty
 
-    def save(self, filename='data_proc'):
+    def save(self, filename='data_proc.pickle'):
         """
         This function saves the data processing object so it can be used at al ater stage.
         :param filename: name of the file in which to save the object.
@@ -136,10 +136,9 @@ class Molecules_processing():
         :return: None
         """
 
-        dict_name = filename + ".pickle"
-        pickle.dump([self.char_to_idx, self.idx_to_char, self.max_size], open(dict_name, "wb"))
+        pickle.dump([self.char_to_idx, self.idx_to_char, self.max_size], open(filename, "wb"))
 
-    def load(self, filename='data_proc'):
+    def load(self, filename='data_proc.pickle'):
         """
         This function reloads a previously defined Model_processing object.
         :param filename: name of the file in which the object is saved.
@@ -147,9 +146,7 @@ class Molecules_processing():
         :return: None
         """
 
-        dict_name = filename + ".pickle"
-
-        idx_dixt = pickle.load(open(dict_name, "rb"))
+        idx_dixt = pickle.load(open(filename, "rb"))
         self.char_to_idx = idx_dixt[0]
         self.idx_to_char = idx_dixt[1]
         self.max_size = idx_dixt[2]

@@ -1,18 +1,21 @@
-Installation
-------------
+Installation instructions
+-------------------------
 
-This package is not available on pip yet, but it will be soon.
+In order to use this package, you need the following packages installed:
 
-The requirements to use this package are:
+- scikit-learn (0.19.1 or higher)
+- tensorflow (1.9.0 or higher) or tensorflow-gpu (1.9.0 or higher)
+- keras (2.2.0 or higher)
+- rdkit (optional)
 
-1. Tensorflow 1.9
-2. Keras 2.2
-4. Scikit-learn 1.19
+RDkit is only needed for the reward function in reinforcement learning.
 
-Some functions require RDKit, but most functionality does not require it to be installed.
+To install, start by cloning the repository:
 
-Instructions
-------------
+``git clone https://github.com/SilviaAmAm/NovaData.git``
 
+Then:
+
+``pip install NovaData/``
 
 
