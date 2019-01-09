@@ -8,6 +8,8 @@ Current List of Contributors:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Silvia Amabilino (NovaData Solutions ltd., University of Bristol)
+- Michael Mazanetz (NovaData Solutions ltd.)
+- David Glowacki (University of Bristol)
 
 Installation
 ------------

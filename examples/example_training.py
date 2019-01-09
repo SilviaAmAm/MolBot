@@ -43,8 +43,7 @@ estimator = smiles_generator.Smiles_generator(epochs=20, batch_size=100, tensorb
 estimator.fit(X, y)
 
 # Predicting 10 new molecules from the fitted model at a temperature of 0.75
-X_pred = ["G"]*10
-X_pred_hot = dp.onehot_encode(X_pred)
+X_pred_hot = dp.get_empty(10)
 pred_hot = estimator.predict(X_pred_hot, temperature=0.75)
 pred = dp.onehot_decode(pred_hot)
 
