@@ -13,7 +13,7 @@ data_handler_file = current_dir + "/../data/data_proc.pickle"
 
 # Creating the reinforcement learning object
 reward_f = rewards.calculate_tpsa_reward
-rl = reinforcement_learning.Rienforcement_learning(model_file=model_file,
+rl = reinforcement_learning.Reinforcement_learning(model_file=model_file,
                                                    data_handler_file=data_handler_file,
                                                    reward_function=reward_f)
 
