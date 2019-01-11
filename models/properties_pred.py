@@ -22,7 +22,7 @@ import warnings
 class Properties_predictor(BaseEstimator):
 
     def __init__(self, hidden_neurons_1=100, hidden_neurons_2=100, l1=0.0, l2=0.0, learning_rate=0.001, batch_size=20,
-                 epochs=4):
+                 epochs=4, val=True):
         """
         Constructor for the Properties_predictor class.
 
@@ -50,6 +50,7 @@ class Properties_predictor(BaseEstimator):
         self.batch_size = batch_size
         self.epochs = epochs
         self._n_feat = 0
+        self.val = val
 
     def fit(self, X, y):
         """
@@ -73,7 +74,7 @@ class Properties_predictor(BaseEstimator):
         callbacks_list = [tensorboard]
 
         # If there are enough samples, use some as validation data
-        if X.shape[0] >= 20:
+        if X.shape[0] >= 20 and self.val:
             X_train, X_val, y_train, y_val = modsel.train_test_split(X, y, test_size=0.05)
 
 

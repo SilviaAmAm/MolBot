@@ -84,7 +84,7 @@ def test_rl():
         model_file = current_dir + "/../data/model.h5"
         data_handler_file = current_dir + "/../data/data_proc.pickle"
         reward_f = rewards.calculate_tpsa_reward
-        rl = reinforcement_learning.Rienforcement_learning(model_file=model_file,
+        rl = reinforcement_learning.Reinforcement_learning(model_file=model_file,
                                                            data_handler_file=data_handler_file,
                                                            reward_function=reward_f)
         rl.train(temperature=0.75, epochs=2, n_train_episodes=5, sigma=60)

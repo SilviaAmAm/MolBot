@@ -18,7 +18,7 @@ import random
 from models import utils
 from models import data_processing
 
-class Rienforcement_learning():
+class Reinforcement_learning():
 
     def __init__(self, model_file, data_handler_file, reward_function):
         """
