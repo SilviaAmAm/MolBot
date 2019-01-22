@@ -14,10 +14,11 @@ import sklearn.model_selection as modsel
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn import __version__
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, r2_score
 
 import tempfile
 import warnings
+from models import utils
 
 class Properties_predictor(BaseEstimator):
 
@@ -107,7 +108,7 @@ class Properties_predictor(BaseEstimator):
         else:
             return y_pred
 
-    def score(self, X, y):
+    def score(self, X, y, err_type="r2"):
         """
         Returns a score. In this case the score is the negative mean absolute error.
 
@@ -115,18 +116,28 @@ class Properties_predictor(BaseEstimator):
         :type X: np array of shape (n_samples, n_feaures)
         :param y: The target values
         :type y: np array of shape (n_samples,)
+        :param err_type: what kind of error to use (rmse, mae or r^2)
+        :type err_type: string
         :return: the score
         :rtype: float
         """
 
         X, y = check_X_y(X, y, accept_sparse=False)
         X = check_array(X, accept_sparse=False)
+        if not err_type in ["mae", "rmse", "r2"]:
+            print("The only available error measures are mae, rmse, r2. Got %s" % (str(err_type)))
+            exit()
         check_is_fitted(self, 'is_fitted_')
 
         y_pred = (self._model.predict(X)).ravel()
-        mae = (-1.0) * mean_absolute_error(y, y_pred, sample_weight=None)
+        if err_type == "mae":
+            error = (-1.0) * mean_absolute_error(y, y_pred)
+        elif err_type == "rmse":
+            error = (-1.0) * utils.root_mean_squared_err(y, y_pred)
+        else:
+            error = r2_score(y, y_pred)
 
-        return mae
+        return error
 
     def _build_model(self):
         """

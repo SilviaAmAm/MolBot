@@ -157,3 +157,7 @@ def check_sigma(sigma):
         sigma = float(sigma)
     except ValueError:
         raise InputError("Sigma should be a float. Got %s" % str(sigma))
+
+def root_mean_squared_err(y_true, y_pred):
+
+    return np.mean(np.square((y_true-y_pred)))
