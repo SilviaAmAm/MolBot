@@ -41,7 +41,8 @@ y[:, -1, idx_A] = 1
 
 # Creating the model
 estimator = smiles_generator.Smiles_generator(epochs=20, batch_size=100, tensorboard=False, hidden_neurons_1=100,
-                                              hidden_neurons_2=100, dropout_1=0.3, dropout_2=0.5, learning_rate=0.001)
+                                              hidden_neurons_2=100, dropout_1=0.3, dropout_2=0.5, learning_rate=0.001,
+                                              validation=0.01)
 
 # Training the model on the one-hot encoded molecules
 estimator.fit(X, y)

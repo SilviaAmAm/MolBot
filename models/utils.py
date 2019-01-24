@@ -40,14 +40,18 @@ def set_hidden_neurons(h):
     else:
         raise InputError("The number of hidden neurons should be a positive non zero integer. Got %s." % (str(h)))
 
-
-def set_dropout(drop):
-    if drop >= 0.0 and drop < 1.0:
-        return drop
+def _check_float_perc(x):
+    if x >= 0.0 and x < 1.0:
+        return x
     else:
         raise InputError(
-            "The dropout rate should be between 0 and 1. Got %s." % (str(drop)))
+            "The dropout rate should be between 0 and 1. Got %s." % (str(x)))
 
+def set_dropout(drop):
+    return _check_float_perc(drop)
+
+def set_validation(validation):
+    return _check_float_perc(validation)
 
 def set_provisional_batch_size(batch_size):
     if batch_size != "auto":
