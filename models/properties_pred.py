@@ -41,6 +41,8 @@ class Properties_predictor(BaseEstimator):
         :type batch_size: int
         :param epochs: number of iterations of training
         :type epochs: int
+        :param val: percentage of samples to use for validation during training.
+        :type val: float >= 0 and < 1
         """
 
         self.hidden_neurons_1 = hidden_neurons_1
@@ -51,7 +53,7 @@ class Properties_predictor(BaseEstimator):
         self.batch_size = batch_size
         self.epochs = epochs
         self._n_feat = 0
-        self.val = val
+        self.val = utils.set_validation(val)
 
     def fit(self, X, y):
         """
@@ -75,9 +77,8 @@ class Properties_predictor(BaseEstimator):
         callbacks_list = [tensorboard]
 
         # If there are enough samples, use some as validation data
-        if X.shape[0] >= 20 and self.val:
-            X_train, X_val, y_train, y_val = modsel.train_test_split(X, y, test_size=0.05)
-
+        if int(self.val*X.shape[0]) > 0:
+            X_train, X_val, y_train, y_val = modsel.train_test_split(X, y, test_size=self.val)
 
             model.fit(X_train, y_train, batch_size=self.batch_size, verbose=1, epochs=self.epochs,
                         callbacks=callbacks_list, validation_data=(X_val, y_val))
