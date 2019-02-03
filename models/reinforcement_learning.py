@@ -222,19 +222,7 @@ class Reinforcement_learning():
 
         # Calculate the reward for the finished smile
         smiles_predictions = data_handler.onehot_decode(hot_pred)
-        new_rewards, idx_invalid = self.reward_function(smiles_predictions)
-
-        if len(new_rewards) == 0:
-            return experience, rewards
-
-        # Remove all invalid smiles
-        try:
-            hot_pred = np.delete(hot_pred, idx_invalid, axis=0)
-            sequence_log_likelihood = np.delete(sequence_log_likelihood, idx_invalid, axis=0)
-            assert hot_pred.shape[0] == len(new_rewards)
-            assert sequence_log_likelihood.shape[0] == len(new_rewards)
-        except ValueError:
-            pass
+        new_rewards = self.reward_function(smiles_predictions)
 
         # If the experience buffer is not full, add as many are needed
         if len(experience) < n_episodes:

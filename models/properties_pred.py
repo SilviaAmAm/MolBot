@@ -23,7 +23,7 @@ from models import utils
 class Properties_predictor(BaseEstimator):
 
     def __init__(self, hidden_neurons_1=100, hidden_neurons_2=100, l1=0.0, l2=0.0, learning_rate=0.001, batch_size=20,
-                 epochs=4, val=True):
+                 epochs=4, val=0.05):
         """
         Constructor for the Properties_predictor class.
 

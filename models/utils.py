@@ -43,7 +43,7 @@ def _check_float_perc(x):
         return x
     else:
         raise InputError(
-            "The dropout rate should be between 0 and 1. Got %s." % (str(x)))
+            "Parameter that should be between 0 and 1 is %s." % (str(x)))
 
 def set_dropout(drop):
     return _check_float_perc(drop)
