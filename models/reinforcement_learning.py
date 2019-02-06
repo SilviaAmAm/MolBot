@@ -77,7 +77,8 @@ class Reinforcement_learning():
             experience, rewards = self._rl_episodes(self.agent, self.prior, self.dh, n_train_episodes,
                                                     experience, rewards)
 
-            for _ in range(10):
+            for _ in range(n_train_episodes):
+                # TODO think about vectorising this step
                 try:
                     random_n = random.randint(0, len(experience) - 1)
                     state = experience[random_n][0]
