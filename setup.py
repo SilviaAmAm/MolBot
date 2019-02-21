@@ -4,8 +4,8 @@ from distutils.core import setup
 
 # Information
 __author__ = "Silvia Amabilino"
-__copyright__ = "Copyright 2018"
-__license__ = "TBC"
+__copyright__ = "Michael Mazanetz, Silvia Amabilino, David Glowacki"
+__license__ = "GPLv3"
 __version__ = "1.0.0"
 __maintainer__ = "Silvia Amabilino"
 __email__ = "silvia.amabilino@bristol.ac.uk"

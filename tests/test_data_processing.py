@@ -1,3 +1,7 @@
+# Copyright (c) Michael Mazanetz (NovaData Solutions LTD.), Silvia Amabilino (NovaData Solutions LTD.,
+# University of Bristol), David Glowacki (University of Bristol). All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
 from models import data_processing
 import os
 
