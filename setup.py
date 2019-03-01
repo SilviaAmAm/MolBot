@@ -10,7 +10,7 @@ __version__ = "1.0.0"
 __maintainer__ = "Silvia Amabilino"
 __email__ = "silvia.amabilino@bristol.ac.uk"
 __status__ = "Beta"
-__description__ = "De-novo drug design"
+__description__ = "Recurrent Neural Networks for Drug Discovery"
 __url__ = "https://github.com/SilviaAmAm/NovaData"
 __requirements__ = [
                     "scikit-learn >= 0.19.1",
@@ -18,7 +18,7 @@ __requirements__ = [
                     "keras >= 2.2.0"
                     ]
 
-setup(name='NovaData',
+setup(name='RNN-DD_open',
       version=__version__,
       description=__description__,
       author=__author__,

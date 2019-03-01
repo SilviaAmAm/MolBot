@@ -25,11 +25,11 @@ RDkit is only needed for the reward function in reinforcement learning.
 
 To install, start by cloning the repository:
 
-``git clone https://github.com/SilviaAmAm/NovaData.git``
+``https://github.com/SilviaAmAm/RNN-DD_open.git``
 
 Then:
 
-``pip install NovaData/``
+``pip install RNN-DD_open/``
 
 Usage
 -----

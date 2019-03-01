@@ -5,7 +5,7 @@
 """
 Main module
 ===============
-Provides the two types of Recurrent Neural Networks for de-novo drug generations and all the functions needed to
+Provides the two types of Recurrent Neural Networks for de-novo drug generation and all the functions needed to
 preprocess the data.
 """
 
