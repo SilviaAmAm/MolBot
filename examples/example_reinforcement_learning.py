@@ -1,5 +1,11 @@
-# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Copyright (c) Michael Mazanetz (NovaData Solutions LTD.), Silvia Amabilino (NovaData Solutions LTD.,
+# University of Bristol), David Glowacki (University of Bristol). All rights reserved.
 # Licensed under the GPL. See LICENSE in the project root for license information.
+
+"""
+This example shows how to use reinforcement learning to refine an already trained recurrent neural network. It requires
+having run example_training.py first.
+"""
 
 from models import data_processing, reinforcement_learning, rewards
 from random import shuffle
@@ -8,8 +14,8 @@ import os
 
 # Import the data and parse it
 current_dir = os.path.dirname(os.path.realpath(__file__))
-model_file = current_dir + "/../data/model.h5"
-data_handler_file = current_dir + "/../data/data_proc.pickle"
+model_file = current_dir + "/example-save.h5"
+data_handler_file = current_dir + "/data_proc.pickle"
 
 # Creating the reinforcement learning object
 reward_f = rewards.calculate_tpsa_reward

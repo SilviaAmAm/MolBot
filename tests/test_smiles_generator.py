@@ -1,3 +1,7 @@
+# Copyright (c) Michael Mazanetz (NovaData Solutions LTD.), Silvia Amabilino (NovaData Solutions LTD.,
+# University of Bristol), David Glowacki (University of Bristol). All rights reserved.
+# Licensed under the GPL. See LICENSE in the project root for license information.
+
 from models import smiles_generator as sg
 from models import data_processing, reinforcement_learning
 import os
@@ -11,6 +15,7 @@ X = dp.onehot_encode(smiles)
 y = np.zeros(X.shape)
 y[:, :-1, :] = X[:, 1:, :]
 X_pred = dp.get_empty(3)
+dp.save("temp.pickle")
 
 def test_set_tb():
 
@@ -73,23 +78,23 @@ def test_reload_fit():
     estimator.load(filename="temp.h5")
     estimator.fit(X, y)
 
-    os.remove("temp.h5")
-
 def test_rl():
 
     try:
         from models import rewards
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        model_file = current_dir + "/../data/model.h5"
-        data_handler_file = current_dir + "/../data/data_proc.pickle"
+        model_file = current_dir + "/temp.h5"
+        data_handler_file = current_dir + "/temp.pickle"
         reward_f = rewards.calculate_tpsa_reward
         rl = reinforcement_learning.Reinforcement_learning(model_file=model_file,
                                                            data_handler_file=data_handler_file,
                                                            reward_function=reward_f)
         rl.train(temperature=0.75, epochs=2, n_train_episodes=5, sigma=60)
         rl.save("rl_model.h5")
+        os.remove("temp.h5")
     except ModuleNotFoundError:
+        os.remove("temp.h5")
         print("You dont seem to have RDKit installed, so to use Reinforcement Learning you will have to make a new "
               "reward function.")
         pass
@@ -97,7 +102,7 @@ def test_rl():
 def test_after_rl():
 
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    data_handler_file = current_dir + "/../data/data_proc.pickle"
+    data_handler_file = current_dir + "/temp.pickle"
 
     dh = data_processing.Molecules_processing()
     dh.load(data_handler_file)
@@ -107,6 +112,7 @@ def test_after_rl():
     estimator.predict(X_pred_rl)
 
     os.remove("rl_model.h5")
+    os.remove("temp.pickle")
 
 if __name__ == "__main__":
     test_set_tb()

@@ -1,10 +1,10 @@
-# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Copyright (c) Michael Mazanetz (NovaData Solutions LTD.), Silvia Amabilino (NovaData Solutions LTD.,
+# University of Bristol), David Glowacki (University of Bristol). All rights reserved.
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 """
-This example shows how to train an RNN on a set of smiles and how to predict new smiles with the trained model.
-This is just an example to show how to construct the model, because the example data set only contains 458 samples, which
-is not enough to train the RNN.
+This example shows how to set up the training of an RNN and how to use the trained model to predict new smiles.
+The data set used is very small, so the RNN can't learn anything sensible. Replace the example data with your data.
 """
 
 from models import smiles_generator, data_processing
@@ -14,20 +14,15 @@ import numpy as np
 
 # Reading the data
 current_dir = os.path.dirname(os.path.realpath(__file__))
-in_d = open(current_dir + "/../data/bioactivity_PPARg_filtered.csv", 'r')
+in_d = open(current_dir + "/../data/example_data_2.csv", 'r')
 
 # Parsing the data
 molecules = []
 
 for line in in_d:
-    line_split = line.split(",")
-    molecule_raw = line_split[-3]
-    molecule = molecule_raw[1:-1]
-    if molecule == "CANONICAL_SMILES":
-        pass
-    else:
-        molecules.append(molecule)
-random.shuffle(molecules)
+    line = line.rstrip()
+    molecules.append(line)
+
 print("The total number of molecules is: %i \n" % (len(molecules)))
 
 # One-hot encode the molecules
@@ -55,5 +50,6 @@ pred = dp.onehot_decode(pred_hot)
 print(pred)
 
 # Saving the estimator for later re-use
-estimator.save("example-save")
+estimator.save("example-save.h5")
+dp.save()
 

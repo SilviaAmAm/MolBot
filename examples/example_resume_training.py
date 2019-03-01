@@ -1,4 +1,5 @@
-# Copyright (c) NovaData Solutions LTD. All rights reserved.
+# Copyright (c) Michael Mazanetz (NovaData Solutions LTD.), Silvia Amabilino (NovaData Solutions LTD.,
+# University of Bristol), David Glowacki (University of Bristol). All rights reserved.
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 """
@@ -13,26 +14,24 @@ import random
 
 # Reading the data
 current_dir = os.path.dirname(os.path.realpath(__file__))
-in_d = open(current_dir + "/../data/bioactivity_PPARg_filtered.csv", 'r')
+in_d = open(current_dir + "/../data/example_data_2.csv", 'r')
 
 # Parsing the data
 molecules = []
 
 for line in in_d:
-    line_split = line.split(",")
-    molecule_raw = line_split[-3]
-    molecule = molecule_raw[1:-1]
-    if molecule == "CANONICAL_SMILES":
-        pass
-    else:
-        molecules.append(molecule)
+    line = line.rstrip()
+    molecules.append(line)
+
 random.shuffle(molecules)
 print("The total number of molecules is: %i \n" % (len(molecules)))
 
 # One-hot encode the molecules
 dp = data_processing.Molecules_processing()
+dp.load()
 X = dp.onehot_encode(molecules)
 # y is just the same as X just shifted by one
+idx_A = dp.char_to_idx['A']
 y = np.zeros(X.shape)
 idx_A = dp.char_to_idx['A']
 y[:, :-1, :] = X[:, 1:, :]
@@ -44,7 +43,7 @@ estimator = smiles_generator.Smiles_generator(epochs=20, batch_size=100, tensorb
                                               validation=0.01)
 
 # Reloading the model
-estimator.load("example-save")
+estimator.load("example-save.h5")
 
 # Carrying on fitting the model that was previously saved
 estimator.fit(X, y)

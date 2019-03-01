@@ -19,7 +19,7 @@ def convert_ic50_pic50(ic50):
 
 # Getting the data
 current_dir = os.path.dirname(os.path.realpath(__file__))
-in_d = open(current_dir + "/../data/TyrosineproteinkinaseJAK2.csv", 'r')
+in_d = open(current_dir + "/../../data/example_data_1.csv", 'r')
 
 # Read molecules and activities from CSV file
 molecules = []
@@ -28,16 +28,13 @@ activities = []
 for line in in_d:
     line = line.rstrip()
     line_split = line.split(",")
-    molecule_raw = line_split[-1]
-    activity = line_split[3]
-    molecule = molecule_raw[1:-1]
-    if molecule == "SMI (Canonical)":
-        pass
-    else:
-        molecules.append(molecule)
-        activities.append(float(activity))
+    molecule = line_split[0]
+    activity = line_split[1]
 
-shuffle(molecules)
+    molecules.append(molecule)
+    activities.append(float(activity))
+
+in_d.close()
 
 # Processing the data
 dp = data_processing.Molecules_processing()
