@@ -78,17 +78,15 @@ class Reinforcement_learning():
             experience, rewards = self._rl_episodes(self.agent, self.prior, self.dh, n_train_episodes,
                                                     experience, rewards)
 
-            for _ in range(10):
-                try:
-                    random_n = random.randint(0, len(experience) - 1)
-                    state = experience[random_n][0]
-                    prior_loglikelihood = experience[random_n][1]
-                    reward = experience[random_n][2]
+            for _ in range(n_train_episodes):
+                # TODO think about vectorising this step (training function seems already vectorised) => The problem is extracting the stuff from the tuple
 
-                    training_function([state, prior_loglikelihood, reward])
-                except ValueError:
-                    print("No valid smiles were generated in this epoch.")
-                    pass
+                random_n = random.randint(0, len(experience) - 1)
+                state = experience[random_n][0]
+                prior_loglikelihood = experience[random_n][1]
+                reward = experience[random_n][2]
+
+                training_function([state, prior_loglikelihood, reward])
 
     def save(self, filename='model.h5'):
         """
@@ -223,19 +221,7 @@ class Reinforcement_learning():
 
         # Calculate the reward for the finished smile
         smiles_predictions = data_handler.onehot_decode(hot_pred)
-        new_rewards, idx_invalid = self.reward_function(smiles_predictions)
-
-        if len(new_rewards) == 0:
-            return experience, rewards
-
-        # Remove all invalid smiles
-        try:
-            hot_pred = np.delete(hot_pred, idx_invalid, axis=0)
-            sequence_log_likelihood = np.delete(sequence_log_likelihood, idx_invalid, axis=0)
-            assert hot_pred.shape[0] == len(new_rewards)
-            assert sequence_log_likelihood.shape[0] == len(new_rewards)
-        except ValueError:
-            pass
+        new_rewards = self.reward_function(smiles_predictions)
 
         # If the experience buffer is not full, add as many are needed
         if len(experience) < n_episodes:

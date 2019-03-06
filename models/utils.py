@@ -27,13 +27,11 @@ def ceil(a, b):
 class InputError(Exception):
     pass
 
-
 def set_tensorboard(tb):
     if (tb in (True, False)):
         return tb
     else:
         raise InputError("Parameter Tensorboard should be either true or false. Got %s" % (str(tb)))
-
 
 def set_hidden_neurons(h):
     if is_positive_integer(h):
@@ -41,14 +39,18 @@ def set_hidden_neurons(h):
     else:
         raise InputError("The number of hidden neurons should be a positive non zero integer. Got %s." % (str(h)))
 
-
-def set_dropout(drop):
-    if drop >= 0.0 and drop < 1.0:
-        return drop
+def _check_float_perc(x):
+    if x >= 0.0 and x < 1.0:
+        return x
     else:
         raise InputError(
-            "The dropout rate should be between 0 and 1. Got %s." % (str(drop)))
+            "Parameter that should be between 0 and 1 is %s." % (str(x)))
 
+def set_dropout(drop):
+    return _check_float_perc(drop)
+
+def set_validation(validation):
+    return _check_float_perc(validation)
 
 def set_provisional_batch_size(batch_size):
     if batch_size != "auto":
@@ -59,7 +61,6 @@ def set_provisional_batch_size(batch_size):
         return int(batch_size)
     else:
         return batch_size
-
 
 def set_batch_size(batch_size, n_samples):
     if batch_size == 'auto':
@@ -75,13 +76,11 @@ def set_batch_size(batch_size, n_samples):
 
     return better_batch_size
 
-
 def set_epochs(epochs):
     if is_positive_integer(epochs):
         return epochs
     else:
         raise InputError("The number of epochs should be a positive integer. Got %s." % (str(epochs)))
-
 
 def set_learning_rate(lr):
     """
@@ -130,7 +129,6 @@ def check_temperature(T):
     if T <= 0:
         raise ValueError("Temperature parameter should be > 0.0. Got %s" % (str(T)))
 
-
 def check_maxlength(ml):
     """
     This function checks that the maximum length for the predicted smiles is a positive integer.
@@ -158,3 +156,130 @@ def check_sigma(sigma):
         sigma = float(sigma)
     except ValueError:
         raise InputError("Sigma should be a float. Got %s" % str(sigma))
+
+def root_mean_squared_err(y_true, y_pred):
+
+    return np.mean(np.square((y_true-y_pred)))
+
+def valid_and_unique(*args):
+    """
+    This function takes in a list of filenames all corresponding to csv files containing smiles_fine_tuning_1 strings generated *from
+    the same run* so that the percentage of valid and unique smiles_fine_tuning_1 can be calculated, as well as their error.
+
+    :param args: list of filenames
+    :return: percentage valid, percentage unique, error valid, error unique
+    :rtype: float, float, float, float
+    """
+
+    try:
+        from rdkit import Chem
+        from rdkit import rdBase
+        rdBase.DisableLog('rdApp.error')
+    except ModuleNotFoundError:
+        print("You need RDKit to use this function.")
+        exit()
+
+    smiles_files = []
+    for item in args[0]:
+        smiles_files.append(item)
+
+    tot_n_tot = []
+    unique_n_tot = []
+    invalid_tot = []
+
+    for file in smiles_files:
+        smiles_1 = []
+        f = open(file, "r")
+        for line in f:
+            line_split = line.rstrip()
+            smiles_1.append(line_split)
+        f.close()
+        tot_n = len(smiles_1)
+        tot_n_tot.append(tot_n)
+        smiles_1 = set(smiles_1)
+        unique_n = len(smiles_1)
+        unique_n_tot.append(unique_n)
+
+        invalid = 0
+        valid_smiles_05 = []
+
+        for smile in smiles_1:
+            mol = Chem.MolFromSmiles(smile)
+            if isinstance(mol, type(None)):
+                invalid += 1
+            else:
+                valid_smiles_05.append(mol)
+        invalid_tot.append(invalid)
+
+    final_tot_n = np.mean(tot_n_tot)
+    final_unique_n = np.mean(unique_n_tot)
+    unique_err = np.std(unique_n_tot)
+    final_invalid = np.mean(invalid_tot)
+    invalid_err = np.std(invalid_tot)
+
+    perc_unique = final_unique_n / final_tot_n * 100
+    perc_unique_err = unique_err / final_tot_n * 100
+
+    perc_valid = (final_tot_n - final_invalid) / final_tot_n * 100
+    perc_valid_err = invalid_err / final_tot_n * 100
+
+    return perc_valid, perc_unique, perc_valid_err, perc_unique_err
+
+def valid_and_unique_smiles(*args):
+    """
+    This function takes in a list of lists of smiles generated *from the same run* so that the percentage of valid and unique
+    smiles can be calculated, as well as their error.
+
+    :param args: list of lists of smiles
+    :return: percentage valid, percentage unique, error valid, error unique
+    :rtype: float, float, float, float
+    """
+
+    try:
+        from rdkit import Chem
+        from rdkit import rdBase
+        rdBase.DisableLog('rdApp.error')
+    except ModuleNotFoundError:
+        print("You need RDKit to use this function.")
+        exit()
+
+    smiles_runs = []
+    for item in args[0]:
+        smiles_runs.append(item)
+
+    tot_n_tot = []
+    unique_n_tot = []
+    invalid_tot = []
+
+    for one_run in smiles_runs:
+
+        tot_n = len(one_run)
+        tot_n_tot.append(tot_n)
+        smiles_1 = set(one_run)
+        unique_n = len(smiles_1)
+        unique_n_tot.append(unique_n)
+
+        invalid = 0
+        valid_smiles_05 = []
+
+        for smile in smiles_1:
+            mol = Chem.MolFromSmiles(smile)
+            if isinstance(mol, type(None)):
+                invalid += 1
+            else:
+                valid_smiles_05.append(mol)
+        invalid_tot.append(invalid)
+
+    final_tot_n = np.mean(tot_n_tot)
+    final_unique_n = np.mean(unique_n_tot)
+    unique_err = np.std(unique_n_tot)
+    final_invalid = np.mean(invalid_tot)
+    invalid_err = np.std(invalid_tot)
+
+    perc_unique = final_unique_n / final_tot_n * 100
+    perc_unique_err = unique_err / final_tot_n * 100
+
+    perc_valid = (final_tot_n - final_invalid) / final_tot_n * 100
+    perc_valid_err = invalid_err / final_tot_n * 100
+
+    return perc_valid, perc_unique, perc_valid_err, perc_unique_err

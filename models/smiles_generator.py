@@ -22,7 +22,7 @@ from models import utils
 class Smiles_generator():
 
     def __init__(self, tensorboard=False, hidden_neurons_1=256, hidden_neurons_2=256, dropout_1=0.3, dropout_2=0.5,
-                 batch_size="auto", epochs=4, learning_rate=0.001):
+                 batch_size="auto", epochs=4, learning_rate=0.001, validation=0.05):
         """
         This function initialises the parent class common to both Model 1 and 2.
 
@@ -44,6 +44,8 @@ class Smiles_generator():
         :type smiles: list of strings
         :param learning_rate: size of the step taken by the optimiser
         :type learning_rate: float > 0
+        :param validation: percentage of samples to use for validation during training.
+        :type validation: float >= 0 and < 1
         """
 
         self.tensorboard = utils.set_tensorboard(tensorboard)
@@ -54,6 +56,7 @@ class Smiles_generator():
         self.batch_size = utils.set_provisional_batch_size(batch_size)
         self.epochs = utils.set_epochs(epochs)
         self.learning_rate = utils.set_learning_rate(learning_rate)
+        self.validation = utils.set_validation(validation)
 
         self.model = None
         self.loaded_model = None
@@ -95,8 +98,8 @@ class Smiles_generator():
             model = self.loaded_model
 
         # If there are enough samples, use some as validation data
-        if X.shape[0] >= 20:
-            train_idx = int(0.95*X.shape[0])
+        if int(self.validation*X.shape[0]) > 0:
+            train_idx = int((1-self.validation)*X.shape[0])
 
             model.fit(X[:train_idx], y[:train_idx], batch_size=batch_size, verbose=1, epochs=self.epochs,
                         callbacks=callbacks_list, validation_data=(X[train_idx:], y[train_idx:]))
