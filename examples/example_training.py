@@ -3,8 +3,9 @@
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 """
-This example shows how to set up the training of an RNN and how to use the trained model to predict new smiles.
-The data set used is very small, so the RNN can't learn anything sensible. Replace the example data with your data.
+This example shows how to train an RNN on a set of smiles and how to predict new smiles with the trained model.
+This is just an example to show how to construct the model, because the example data set only contains 458 samples, which
+is not enough to train the RNN.
 """
 
 from models import smiles_generator, data_processing
@@ -28,7 +29,7 @@ print("The total number of molecules is: %i \n" % (len(molecules)))
 # One-hot encode the molecules
 dp = data_processing.Molecules_processing()
 X = dp.onehot_encode(molecules)
-# y is just the same as X just shifted by one
+# y is just the same as X just shifted by one with the A character at the end
 idx_A = dp.char_to_idx['A']
 y = np.zeros(X.shape)
 y[:, :-1, :] = X[:, 1:, :]
@@ -36,7 +37,8 @@ y[:, -1, idx_A] = 1
 
 # Creating the model
 estimator = smiles_generator.Smiles_generator(epochs=20, batch_size=100, tensorboard=False, hidden_neurons_1=100,
-                                              hidden_neurons_2=100, dropout_1=0.3, dropout_2=0.5, learning_rate=0.001)
+                                              hidden_neurons_2=100, dropout_1=0.3, dropout_2=0.5, learning_rate=0.001,
+                                              validation=0.01)
 
 # Training the model on the one-hot encoded molecules
 estimator.fit(X, y)

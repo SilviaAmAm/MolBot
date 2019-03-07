@@ -33,12 +33,14 @@ X = dp.onehot_encode(molecules)
 # y is just the same as X just shifted by one
 idx_A = dp.char_to_idx['A']
 y = np.zeros(X.shape)
+idx_A = dp.char_to_idx['A']
 y[:, :-1, :] = X[:, 1:, :]
 y[:, -1, idx_A] = 1
 
 # Creating the model
 estimator = smiles_generator.Smiles_generator(epochs=20, batch_size=100, tensorboard=False, hidden_neurons_1=100,
-                                              hidden_neurons_2=100, dropout_1=0.3, dropout_2=0.5, learning_rate=0.001)
+                                              hidden_neurons_2=100, dropout_1=0.3, dropout_2=0.5, learning_rate=0.001,
+                                              validation=0.01)
 
 # Reloading the model
 estimator.load("example-save.h5")
