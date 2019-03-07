@@ -3,8 +3,9 @@
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 """
-This example shows how to set up the training of an RNN and how to use the trained model to predict new smiles.
-The data set used is very small, so the RNN can't learn anything sensible. Replace the example data with your data.
+This example shows how to train an RNN on a set of smiles and how to predict new smiles with the trained model.
+This is just an example to show how to construct the model, because the example data set only contains 458 samples, which
+is not enough to train the RNN.
 """
 
 from models import smiles_generator, data_processing

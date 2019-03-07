@@ -78,17 +78,15 @@ class Reinforcement_learning():
             experience, rewards = self._rl_episodes(self.agent, self.prior, self.dh, n_train_episodes,
                                                     experience, rewards)
 
-            for _ in range(10):
-                try:
-                    random_n = random.randint(0, len(experience) - 1)
-                    state = experience[random_n][0]
-                    prior_loglikelihood = experience[random_n][1]
-                    reward = experience[random_n][2]
+            for _ in range(n_train_episodes):
+                # TODO think about vectorising this step (training function seems already vectorised) => The problem is extracting the stuff from the tuple
 
-                    training_function([state, prior_loglikelihood, reward])
-                except ValueError:
-                    print("No valid smiles were generated in this epoch.")
-                    pass
+                random_n = random.randint(0, len(experience) - 1)
+                state = experience[random_n][0]
+                prior_loglikelihood = experience[random_n][1]
+                reward = experience[random_n][2]
+
+                training_function([state, prior_loglikelihood, reward])
 
     def save(self, filename='model.h5'):
         """
