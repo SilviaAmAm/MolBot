@@ -85,6 +85,6 @@ def calculate_pic50_reward(X_strings, model="./model.pickle"):
         pic50 = predictor.predict([fp_string])[0]
 
         # To obtain molecules mostly with pIC50 larger than 9
-        rewards.append(np.tanh(pic50 - 9))
+        rewards.append(np.tanh(pic50 - 7))
 
     return rewards
