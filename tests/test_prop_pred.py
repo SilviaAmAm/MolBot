@@ -8,7 +8,6 @@ import os
 
 def test_sklearn():
     check_estimator(properties_pred.Properties_predictor)
-    os.remove("tb/")
 
 if __name__ == "__main__":
     test_sklearn()
