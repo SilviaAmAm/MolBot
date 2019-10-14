@@ -7,7 +7,7 @@ This example shows how to use reinforcement learning to refine an already traine
 having run example_training.py first.
 """
 
-from models import data_processing, reinforcement_learning, rewards
+from molbot import data_processing, reinforcement_learning, rewards
 from random import shuffle
 
 import os

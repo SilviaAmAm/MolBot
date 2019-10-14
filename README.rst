@@ -25,16 +25,27 @@ RDkit is only needed for the reward function in reinforcement learning.
 
 To install, start by cloning the repository:
 
-``https://github.com/SilviaAmAm/RNN-DD_open.git``
+``git clone https://github.com/SilviaAmAm/MolBot.git``
 
 Then:
 
-``pip install RNN-DD_open/``
+``pip install MolBot/``
 
 Usage
 -----
 
 You can have a look at some examples in the ``examples`` folder. More examples will be available once the documentation
 is live.
+
+Running the tests
+-----------------
+
+Go to the test directory:
+
+``cd tests``
+
+Then, run all the tests:
+
+``pytest test_*``
 
 

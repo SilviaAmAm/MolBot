@@ -53,7 +53,6 @@ class Properties_predictor(BaseEstimator):
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.epochs = epochs
-        self._n_feat = 0
         self.val = utils.set_validation(val)
 
     def fit(self, X, y):
@@ -70,8 +69,7 @@ class Properties_predictor(BaseEstimator):
         # Check the inputs
         X, y = check_X_y(X, y, accept_sparse=False)
 
-        self._n_feat = X.shape[-1]
-        model = self._build_model()
+        model = self._build_model(X.shape[-1])
 
         # Set up tensorboard
         tensorboard = TensorBoard(log_dir='./tb', write_graph=True, write_images=False)
@@ -141,15 +139,18 @@ class Properties_predictor(BaseEstimator):
 
         return error
 
-    def _build_model(self):
+    def _build_model(self, n_feat):
         """
         This function builds the Keras model
+
+        :param n_feat: number of input features
+        :type n_feat: int
 
         :return: keras model
         """
 
         model = Sequential()
-        model.add(Dense(self.hidden_neurons_1, input_dim=self._n_feat, activation='tanh',
+        model.add(Dense(self.hidden_neurons_1, input_dim=n_feat, activation='tanh',
                         kernel_regularizer=regularizers.l1_l2(self.l1, self.l2)))
         model.add(Dense(self.hidden_neurons_2, activation='tanh',
                         kernel_regularizer=regularizers.l1_l2(self.l1, self.l2)))

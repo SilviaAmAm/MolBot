@@ -18,13 +18,13 @@ __requirements__ = [
                     "keras >= 2.2.0"
                     ]
 
-setup(name='RNN-DD_open',
+setup(name='molbot',
       version=__version__,
       description=__description__,
       author=__author__,
       author_email=__email__,
       url=__url__,
-      packages=['models'],
+      packages=['molbot'],
       install_requires= __requirements__
      )
 

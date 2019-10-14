@@ -8,7 +8,7 @@ This is just an example to show how to construct the model, because the example 
 is not enough to train the RNN.
 """
 
-from models import smiles_generator, data_processing
+from molbot import smiles_generator, data_processing
 import os
 import random
 import numpy as np

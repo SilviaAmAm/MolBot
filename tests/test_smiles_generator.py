@@ -2,8 +2,8 @@
 # University of Bristol), David Glowacki (University of Bristol). All rights reserved.
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
-from models import smiles_generator as sg
-from models import data_processing, reinforcement_learning
+from molbot import smiles_generator as sg
+from molbot import data_processing, reinforcement_learning
 import os
 import numpy as np
 

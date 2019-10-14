@@ -3,10 +3,12 @@
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 from sklearn.utils.estimator_checks import check_estimator
-from models import properties_pred
+from molbot import properties_pred
+import os
 
 def test_sklearn():
     check_estimator(properties_pred.Properties_predictor)
+    os.remove("tb/")
 
 if __name__ == "__main__":
     test_sklearn()

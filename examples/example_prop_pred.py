@@ -14,8 +14,8 @@ import sklearn.model_selection as modsel
 from sklearn import preprocessing
 from sklearn.pipeline import Pipeline
 
-from models import data_processing
-from models import properties_pred
+from molbot import data_processing
+from molbot import properties_pred
 
 import seaborn as sns
 import matplotlib.pyplot as plt

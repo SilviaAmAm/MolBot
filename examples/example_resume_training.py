@@ -7,7 +7,7 @@ This example shows how to reload a previously saved model and carrying on fittin
 example_training.py first.
 """
 
-from models import smiles_generator, data_processing
+from molbot import smiles_generator, data_processing
 import os
 import numpy as np
 import random

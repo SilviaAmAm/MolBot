@@ -10,3 +10,5 @@ examples/tb/
 tests/tb/
 ._*
 .pytest_cache/
+tests/__pycache__/
+.cache/
