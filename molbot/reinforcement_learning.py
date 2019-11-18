@@ -219,6 +219,10 @@ class Reinforcement_learning():
         prod_individual_action_prob = np.prod(individual_action_probability, axis=-1)
         sequence_log_likelihood = np.log(prod_individual_action_prob)
 
+        if np.isnan(np.sum(sequence_log_likelihood)) or np.isinf(np.sum(sequence_log_likelihood)):
+            print("There are NaNs in the predictions.")
+            exit()
+
         # Calculate the reward for the finished smile
         smiles_predictions = data_handler.onehot_decode(hot_pred)
         new_rewards = self.reward_function(smiles_predictions)

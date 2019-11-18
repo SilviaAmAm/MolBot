@@ -14,8 +14,8 @@ import sklearn.model_selection as modsel
 from sklearn import preprocessing
 from sklearn.pipeline import Pipeline
 
-from models import data_processing
-from models import properties_pred
+from molbot import data_processing
+from molbot import properties_pred
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -34,8 +34,9 @@ def convert_ic50_pic50(ic50):
     return -1 * np.log(ic50 * 1e-9)
 
 # Getting the data
-current_dir = os.path.dirname(os.path.realpath(__file__))
-in_d = open(current_dir + "/../data/example_data_1.csv", 'r')
+data_dir = os.path.join("..", "data")
+data_path = os.path.join(data_dir, "example_data_1.csv")
+in_d = open(data_path, 'r')
 
 # Read molecules and activities from CSV file
 molecules = []

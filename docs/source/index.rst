@@ -12,7 +12,7 @@ This package implements the Generative Recurrent Neural Networks from the `paper
 
 The code is developed through the Github repository:
 
-https://github.com/SilviaAmAm/NovaData
+https://github.com/SilviaAmAm/MolBot
 
 
 .. toctree::

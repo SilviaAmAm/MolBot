@@ -8,14 +8,15 @@ This is just an example to show how to construct the model, because the example 
 is not enough to train the RNN.
 """
 
-from models import smiles_generator, data_processing
+from molbot import smiles_generator, data_processing
 import os
 import random
 import numpy as np
 
 # Reading the data
-current_dir = os.path.dirname(os.path.realpath(__file__))
-in_d = open(current_dir + "/../data/example_data_2.csv", 'r')
+data_dir = os.path.join("..", "data")
+data_path = os.path.join(data_dir, "example_data_2.csv")
+in_d = open(data_path, 'r')
 
 # Parsing the data
 molecules = []

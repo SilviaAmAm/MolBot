@@ -2,7 +2,7 @@
 # University of Bristol), David Glowacki (University of Bristol). All rights reserved.
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
-from models import data_processing
+from molbot import data_processing
 import os
 
 def _get_data():

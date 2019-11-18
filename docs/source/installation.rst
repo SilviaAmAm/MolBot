@@ -12,10 +12,10 @@ RDkit is only needed for the reward function in reinforcement learning.
 
 To install, start by cloning the repository:
 
-``git clone https://github.com/SilviaAmAm/NovaData.git``
+``git clone https://github.com/SilviaAmAm/MolBot.git``
 
 Then:
 
-``pip install NovaData/``
+``pip install MolBot/``
 
 
