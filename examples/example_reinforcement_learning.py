@@ -14,8 +14,8 @@ import os
 
 # Import the data and parse it
 current_dir = os.path.dirname(os.path.realpath(__file__))
-model_file = current_dir + "/example-save.h5"
-data_handler_file = current_dir + "/data_proc.pickle"
+model_file = os.path.join(current_dir, "example-save.h5")
+data_handler_file = os.path.join(current_dir, "data_proc.pickle")
 
 # Creating the reinforcement learning object
 reward_f = rewards.calculate_tpsa_reward

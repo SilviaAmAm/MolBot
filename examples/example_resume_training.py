@@ -13,8 +13,9 @@ import numpy as np
 import random
 
 # Reading the data
-current_dir = os.path.dirname(os.path.realpath(__file__))
-in_d = open(current_dir + "/../data/example_data_2.csv", 'r')
+data_dir = os.path.join("..", "data")
+data_path = os.path.join(data_dir, "example_data_2.csv")
+in_d = open(data_path, 'r')
 
 # Parsing the data
 molecules = []
