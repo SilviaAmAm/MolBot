@@ -38,7 +38,7 @@ pip install MolBot/
 ## Usage
 
 
-You can have a look at some examples in the [examples](../examples) folder.
+You can have a look at some examples in the [examples](./examples) folder.
 
 ## Running the tests
 
