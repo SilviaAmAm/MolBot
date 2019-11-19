@@ -11,7 +11,7 @@ __maintainer__ = "Silvia Amabilino"
 __email__ = "silvia.amabilino@bristol.ac.uk"
 __status__ = "Beta"
 __description__ = "Recurrent Neural Networks for Drug Discovery"
-__url__ = "https://github.com/SilviaAmAm/NovaData"
+__url__ = "https://github.com/SilviaAmAm/MolBot"
 __requirements__ = [
                     "scikit-learn >= 0.19.1",
                     # "tensorflow == 1.9.0",

@@ -79,8 +79,7 @@ class Reinforcement_learning():
                                                     experience, rewards)
 
             for _ in range(n_train_episodes):
-                # TODO think about vectorising this step (training function seems already vectorised) => The problem is extracting the stuff from the tuple
-
+                # TODO think about removing this loop
                 random_n = random.randint(0, len(experience) - 1)
                 state = experience[random_n][0]
                 prior_loglikelihood = experience[random_n][1]

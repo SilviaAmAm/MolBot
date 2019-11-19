@@ -81,7 +81,7 @@ def test_reload_fit():
 def test_rl():
 
     try:
-        from models import rewards
+        from molbot import rewards
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         model_file = current_dir + "/temp.h5"
