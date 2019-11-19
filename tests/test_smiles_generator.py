@@ -10,6 +10,8 @@ import numpy as np
 # Data for the tests
 smiles = ["CC(=O)NC(CS)C(=O)Oc1ccc(NC(C)=O)cc1", "COc1ccc2CC5C3C=CC(O)C4Oc1c2C34CCN5C",
               "O=C(C)Oc1ccccc1C(=O)O"]
+
+# One hot encoding the smiles and saving the data processing object
 dp = data_processing.Molecules_processing()
 X = dp.onehot_encode(smiles)
 y = np.zeros(X.shape)
@@ -18,7 +20,6 @@ X_pred = dp.get_empty(3)
 dp.save("temp.pickle")
 
 def test_set_tb():
-
     try:
         estimator = sg.Smiles_generator(tensorboard=1)
         raise Exception
@@ -79,13 +80,16 @@ def test_reload_fit():
     estimator.fit(X, y)
 
 def test_rl():
+    """
+    This test requires RDKit to be installed. It is skipped if RDKit is not installed.
+    """
 
     try:
         from molbot import rewards
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        model_file = current_dir + "/temp.h5"
-        data_handler_file = current_dir + "/temp.pickle"
+        model_file = os.path.join(current_dir, "temp.h5")
+        data_handler_file = os.path.join(current_dir, "temp.pickle")
         reward_f = rewards.calculate_tpsa_reward
         rl = reinforcement_learning.Reinforcement_learning(model_file=model_file,
                                                            data_handler_file=data_handler_file,
@@ -102,7 +106,7 @@ def test_rl():
 def test_after_rl():
 
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    data_handler_file = current_dir + "/temp.pickle"
+    data_handler_file = os.path.join(current_dir, "temp.pickle")
 
     dh = data_processing.Molecules_processing()
     dh.load(data_handler_file)

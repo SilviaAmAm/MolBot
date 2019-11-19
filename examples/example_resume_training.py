@@ -27,11 +27,11 @@ for line in in_d:
 random.shuffle(molecules)
 print("The total number of molecules is: %i \n" % (len(molecules)))
 
-# One-hot encode the molecules
+# One-hot encode the molecules by loading the already created data processing object
 dp = data_processing.Molecules_processing()
-dp.load()
+dp.load("example-dp.pickle")
 X = dp.onehot_encode(molecules)
-# y is just the same as X just shifted by one
+# y is the same as X, but shifted by one character to the left and with the last character equal to the padding 'A' character
 idx_A = dp.char_to_idx['A']
 y = np.zeros(X.shape)
 idx_A = dp.char_to_idx['A']
@@ -39,12 +39,10 @@ y[:, :-1, :] = X[:, 1:, :]
 y[:, -1, idx_A] = 1
 
 # Creating the model
-estimator = smiles_generator.Smiles_generator(epochs=20, batch_size=100, tensorboard=False, hidden_neurons_1=100,
-                                              hidden_neurons_2=100, dropout_1=0.3, dropout_2=0.5, learning_rate=0.001,
-                                              validation=0.01)
+estimator = smiles_generator.Smiles_generator(epochs=20, batch_size=100, tensorboard=False, validation=0.01)
 
-# Reloading the model
-estimator.load("example-save.h5")
+# Reloading the parameters from the previously trained model
+estimator.load("example-model.h5")
 
 # Carrying on fitting the model that was previously saved
 estimator.fit(X, y)

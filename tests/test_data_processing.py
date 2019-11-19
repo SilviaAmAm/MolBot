@@ -8,7 +8,8 @@ import os
 def _get_data():
     # Reading the data set
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    in_d = open(current_dir + "/../data/example_data_2.csv", 'r')
+    data_path = os.path.join(os.path.join(os.path.join(current_dir, ".."), "data"), "example_data_2.csv")
+    in_d = open(data_path, 'r')
 
     molecules = []
 
@@ -18,6 +19,9 @@ def _get_data():
     return molecules
 
 def test_onehot_encode():
+    """
+    Testing that one hot encoding  and then decoding return the correct molecule.
+    """
 
     molecules = _get_data()
 

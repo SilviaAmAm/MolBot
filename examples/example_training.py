@@ -4,13 +4,12 @@
 
 """
 This example shows how to train an RNN on a set of smiles and how to predict new smiles with the trained model.
-This is just an example to show how to construct the model, because the example data set only contains 458 samples, which
+This is just an example to show how to construct the model, because the example data set only contains 50 samples, which
 is not enough to train the RNN.
 """
 
 from molbot import smiles_generator, data_processing
 import os
-import random
 import numpy as np
 
 # Reading the data
@@ -30,7 +29,7 @@ print("The total number of molecules is: %i \n" % (len(molecules)))
 # One-hot encode the molecules
 dp = data_processing.Molecules_processing()
 X = dp.onehot_encode(molecules)
-# y is just the same as X just shifted by one with the A character at the end
+# y is the same as X, but shifted by one character to the left and with the last character equal to the padding 'A' character
 idx_A = dp.char_to_idx['A']
 y = np.zeros(X.shape)
 y[:, :-1, :] = X[:, 1:, :]
@@ -49,9 +48,11 @@ X_pred_hot = dp.get_empty(10)
 pred_hot = estimator.predict(X_pred_hot, temperature=0.75)
 pred = dp.onehot_decode(pred_hot)
 
-print(pred)
+# Print some predicted SMILES (they will be nonsense here because the model is trained on very few samples)
+for smile in pred:
+    print(smile)
 
 # Saving the estimator for later re-use
-estimator.save("example-save.h5")
-dp.save()
+estimator.save("example-model.h5")
+dp.save("example-dp.pickle")
 

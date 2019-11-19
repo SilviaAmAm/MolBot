@@ -7,6 +7,9 @@ from molbot import properties_pred
 import os
 
 def test_sklearn():
+    """
+    This runs all of the default scikit-learn tests (very thorough). They sometimes break for older versions of pytest.
+    """
     check_estimator(properties_pred.Properties_predictor)
 
 if __name__ == "__main__":
