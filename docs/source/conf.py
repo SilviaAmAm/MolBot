@@ -15,13 +15,14 @@
 import os
 import sys
 cwd = os.getcwd()
-sys.path.insert(0, os.path.abspath(cwd+"/../../models/"))
+model_path = os.path.join(os.path.join(os.path.join(cwd, ".."), ".."), "molbot")
+sys.path.insert(0, os.path.abspath(model_path))
 import sphinx_rtd_theme
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'Generative Recurrent Neural Networks'
+project = 'MolBot: Generative Recurrent Neural Networks for drug design'
 copyright = '2018, Silvia Amabilino'
 author = 'Silvia Amabilino'
 
@@ -96,7 +97,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -112,7 +113,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'GRNNdoc'
+htmlhelp_basename = 'MolBotdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -139,7 +140,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'GRNN.tex', 'GRNN Documentation',
+    (master_doc, 'molbot.tex', 'Molbot Documentation',
      'Silvia Amabilino', 'manual'),
 ]
 
@@ -149,7 +150,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'grnn', 'GRNN Documentation',
+    (master_doc, 'molbot', 'Molbot Documentation',
      [author], 1)
 ]
 
@@ -160,8 +161,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'GRNN', 'GRNN Documentation',
-     author, 'GRNN', 'Generative Recurrent Neural Networks for drug discovery',
+    (master_doc, 'molbot', 'Molbot Documentation',
+     author, 'molbot', 'Generative Recurrent Neural Networks for drug discovery',
      'Miscellaneous'),
 ]
 
