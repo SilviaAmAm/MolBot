@@ -3,7 +3,8 @@
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 """
-This module contains a class that turns SMILES into one-hot encoded arrays and viceversa.
+This class can be used to turn SMILES representations into one-hot encoded arrays and viceversa.
+The initial character is "G" and the end character is "E", while the padding character is "A".
 """
 
 import numpy as np
@@ -26,8 +27,6 @@ class Molecules_processing():
 
         :param molecules: unpadded SMILES strings
         :type molecules: list of strings
-        :param debug: if 1, checks whether the decoded smiles strings are equal to the original SMILES
-        :type debug: bool
         :return: the one hot encoded molecules
         :rtype: np array of shape (n_samples, max_str_len, n_characters)
         """
@@ -119,10 +118,13 @@ class Molecules_processing():
 
     def get_empty(self, n):
         """
-        This function outputs a one hot encoded G character.
+        This function outputs a one hot encoded G character, to be used by the SMILES generator as the initial character
+        to generate a new  SMILES string.
 
         :param n: number of empty one-hot encoded smiles to output
-        :return: numpy array of shape (n, 1, n_char)
+        :type n: int
+        :return: One hot-encoded G character
+        :rtype: numpy array of shape (n, 1, n_char)
         """
 
         empty_smiles = [""]*n
@@ -134,7 +136,8 @@ class Molecules_processing():
 
     def save(self, filename='data_proc.pickle'):
         """
-        This function saves the data processing object so it can be used at al ater stage.
+        This function saves the data processing object so it can be used at a later stage.
+
         :param filename: name of the file in which to save the object.
         :type filename: string
         :return: None
@@ -144,13 +147,14 @@ class Molecules_processing():
 
     def load(self, filename='data_proc.pickle'):
         """
-        This function reloads a previously defined Model_processing object.
+        This function reloads previously created dictionaries with the indices of the characters in the SMILES.
+
         :param filename: name of the file in which the object is saved.
         :type filename: string
         :return: None
         """
 
-        idx_dixt = pickle.load(open(filename, "rb"))
-        self.char_to_idx = idx_dixt[0]
-        self.idx_to_char = idx_dixt[1]
-        self.max_size = idx_dixt[2]
+        loaded_dictionaries = pickle.load(open(filename, "rb"))
+        self.char_to_idx = loaded_dictionaries[0]
+        self.idx_to_char = loaded_dictionaries[1]
+        self.max_size = loaded_dictionaries[2]

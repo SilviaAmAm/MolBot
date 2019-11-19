@@ -3,7 +3,7 @@
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 """
-This module implements a class that can be used for reinforcement learning of the models from the Smiles_generator
+This class contains the methods that are needed to perform reinforcement learning on the models from the Smiles_generator
 class.
 """
 
@@ -28,10 +28,10 @@ class Reinforcement_learning():
         :type model_file: string
         :param data_handler_file: Name of the file in which the data handler has been previously saved.
         :type data_handler_file: string
-        :param reward_function: a function that will evaluate if the predicted smiles are valid and scores them
-        :type reward_function: python function that takes as input one-hot encoded smiles strings (i.e. a numpy array of
-        shape (n_samples, max_length, n_char) and returns the rewards (a list of length n_valid_smiles) and a list of
-        indices of the invalid smiles.
+        :param reward_function: a function that will evaluate if the predicted smiles are valid and scores them. The
+        function takes as input one-hot encoded smiles strings (i.e. a numpy array of shape (n_samples, max_length, n_char)
+        and returns the rewards (a list of length n_valid_smiles of floats) and a list of indices of the invalid smiles.
+        :type reward_function: function
         """
 
         self._load_model(model_file)
@@ -92,6 +92,7 @@ class Reinforcement_learning():
         This function enables to save the trained model so that then training or predictions can be done at a later stage.
 
         :param filename: Name of the file in which to save the model.
+        :type filename: string
         :return: None
         """
 
@@ -143,8 +144,8 @@ class Reinforcement_learning():
         """
         This function extends the model so that Reinforcement Learning can be done.
 
-        :param temperature: the temperature of the softmax parameter
-        :type temperature: positive float
+        :param model_agent: agent RNN model
+        :type model_agent: object from Smiles_generator class
         :param sigma: parameter that controls how to weight the desirability of a sequence. Explanation https://jcheminf.biomedcentral.com/track/pdf/10.1186/s13321-017-0235-x equation on bottom right of page 4
         :type sigma: float
         :param lr: learning rate for optimiser in the reinforcement learning algorithm
@@ -263,9 +264,13 @@ class Reinforcement_learning():
         This function predicts one-hot encoded smiles strings starting from a fragment.
 
         :param X: One-hot encoded fragment of smile string
-        :param model: the keras model to use for prediction
+        :type X: numpy array of shape (n_samples, n_char, n_feat)
+        :param model: the RNN keras model to use for prediction
+        :type model: object from Smiles_generator class
         :param max_length: maximum length of predicted molecules
+        :type max_length: int
         :return: predicted one-hot encoded smiles strings
+        :rtype: numpy array of shape (n_samples, max_n_char, n_feat)
         """
 
         n_feat = X.shape[-1]

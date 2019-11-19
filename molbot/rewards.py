@@ -62,7 +62,7 @@ def calculate_pic50_reward(X_strings, model="./model.pickle"):
         predictor = pickle.load(open(model, "rb"))
 
     except ModuleNotFoundError:
-        print("This function requires the module pickle to unpickle a saved model.")
+        print("This function requires the pickle package to unpickle a saved model.")
         exit()
 
     rewards = []

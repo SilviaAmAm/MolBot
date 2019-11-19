@@ -3,7 +3,7 @@
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 """
-This module contains the RNN that learns from SMILES strings and then generates new SMILES.
+This module contains the class for the RNN that learns molecules from SMILES strings and then can generate new SMILES.
 """
 import numpy as np
 
@@ -17,7 +17,7 @@ from keras.callbacks import TensorBoard
 from keras.layers import Lambda
 from keras.models import load_model
 
-from models import utils
+from . import utils
 
 class Smiles_generator():
 
@@ -75,9 +75,6 @@ class Smiles_generator():
 
         # Check the inputs
         X, y = utils.check_X_y(X, y)
-
-        # Construct the model
-        model = self._build_model(X.shape[-1])
 
         # Adjust batch_size based on number of samples provided
         batch_size = utils.set_batch_size(self.batch_size, X.shape[0])
@@ -210,8 +207,10 @@ class Smiles_generator():
         :return: The modified model
         """
 
+        # Removes the activation function layer and the lambda layer with temperture param equal to 1
         model.pop()
         model.pop()
+        # Adds the layer with temperature parameter specified by the user and then re-adds the Softmax
         model.add(Lambda(lambda x: x / temperature))
         model.add(Activation('softmax'))
 

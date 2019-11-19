@@ -3,7 +3,8 @@
 # Licensed under the GPL. See LICENSE in the project root for license information.
 
 """
-This module contains the model that is used to predict molecular properties from SMILES strings
+This class contains a feed forward neural network model that can be trained to predict molecular properties.
+It is compatible with Osprey for the hyper-parameter optimisation.
 """
 
 import keras
@@ -57,7 +58,7 @@ class Properties_predictor(BaseEstimator):
 
     def fit(self, X, y):
         """
-        This function fits a Feed Forward Neural Network to the data.
+        This method fits a Feed Forward Neural Network to the data.
 
         :param X: The training input samples
         :type X: np array of shape (n_samples, n_feaures)
@@ -110,7 +111,8 @@ class Properties_predictor(BaseEstimator):
 
     def score(self, X, y, err_type="r2"):
         """
-        Returns a score. In this case the score is the negative mean absolute error.
+        This method uses X to predict values of y and then scores the quality of the predictions.
+        The type of score function can be chosen among root mean square error, mean absolute error and scikit-learn R2.
 
         :param X: The training input samples
         :type X: np array of shape (n_samples, n_feaures)
@@ -141,7 +143,7 @@ class Properties_predictor(BaseEstimator):
 
     def _build_model(self, n_feat):
         """
-        This function builds the Keras model
+        This method builds the Keras model
 
         :param n_feat: number of input features
         :type n_feat: int
@@ -160,8 +162,11 @@ class Properties_predictor(BaseEstimator):
 
         return model
 
-    # Needed because the models in keras dont have a __getstate__ function, which is needed for pickling
     def __getstate__(self):
+        """
+        This method is needed because the models in keras dont have a __getstate__ function, which is needed for
+        pickling the model after training.
+        """
 
         try:
             state = super(BaseEstimator, self).__getstate__()
@@ -180,8 +185,11 @@ class Properties_predictor(BaseEstimator):
         else:
             return state
 
-    # Needed because the models in keras dont have a __setstate__ function, which is needed for pickling
     def __setstate__(self, state):
+        """
+        This method is needed because the models in keras dont have a __setstate__ function, which is needed for
+        pickling the model after training.
+        """
 
         if type(self).__module__.startswith('sklearn.'):
             pickle_version = state.pop("_sklearn_version", "pre-0.18")

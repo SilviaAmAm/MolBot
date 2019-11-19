@@ -7,15 +7,14 @@ This example shows how to use reinforcement learning to refine an already traine
 having run example_training.py first.
 """
 
-from molbot import data_processing, reinforcement_learning, rewards
-from random import shuffle
+from molbot import reinforcement_learning, rewards
 
 import os
 
 # Import the data and parse it
 current_dir = os.path.dirname(os.path.realpath(__file__))
-model_file = os.path.join(current_dir, "example-save.h5")
-data_handler_file = os.path.join(current_dir, "data_proc.pickle")
+model_file = os.path.join(current_dir, "example-model.h5")
+data_handler_file = os.path.join(current_dir, "example-dp.pickle")
 
 # Creating the reinforcement learning object
 reward_f = rewards.calculate_tpsa_reward

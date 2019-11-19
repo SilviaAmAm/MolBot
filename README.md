@@ -16,27 +16,47 @@ This package implements the Generative Recurrent Neural Networks from the [paper
 In order to use this package, you need the following packages installed:
 
 - scikit-learn (0.19.1 or higher)
-- tensorflow (1.9.0 or higher) or tensorflow-gpu (1.9.0 or higher)
+- tensorflow (1.9.0 or higher, but < tensorflow 2.0) or tensorflow-gpu (1.9.0 or higher, but < tensorflow 2.0)
 - keras (2.2.0 or higher)
 - rdkit (optional)
 
 RDkit is only needed for the reward function in reinforcement learning.
 
-To install, start by cloning the repository:
+To install, you can run the following command:
+
+```
+pip install git+https://github.com/SilviaAmAm/MolBot.git
+```
+
+Otherwise, you can clone the repository:
 
 ```
 git clone https://github.com/SilviaAmAm/MolBot.git
 ```
 
-Then, in your desired python environment:
+and then, in your desired python environment, run:
 
 ```
 cd MolBot
 pip install MolBot/
 ```
 
-## Usage
+## Building the documentation
 
+To build the documentation, these packages are required:
+
+- nbsphinx
+- sphinx_rtd_theme
+
+In the [docs](./docs) folder, run:
+
+```
+make html
+```
+
+Then, open `./docs/build/html/index.html`.
+
+## Usage
 
 You can have a look at some examples in the [examples](./examples) folder.
 
