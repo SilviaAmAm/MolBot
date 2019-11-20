@@ -16,8 +16,8 @@ from keras.layers import Lambda
 import numpy as np
 import random
 
-from models import utils
-from models import data_processing
+from . import utils
+from . import data_processing
 
 class Reinforcement_learning():
 

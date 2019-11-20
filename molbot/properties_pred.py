@@ -20,7 +20,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 
 import tempfile
 import warnings
-from models import utils
+from . import utils
 
 class Properties_predictor(BaseEstimator):
 
